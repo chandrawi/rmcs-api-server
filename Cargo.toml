@@ -1,0 +1,13 @@
+[workspace]
+members = [".", "rmcs-auth-api/rust", "rmcs-auth-db", "rmcs-resource-api/rust", "rmcs-resource-db"]
+
+[package]
+name = "rmcs-api-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rmcs-auth-api = { path = "./rmcs-auth-api/rust" }
+rmcs-auth-db = { path = "./rmcs-auth-db" }
+rmcs-resource-api = { path = "./rmcs-resource-api/rust" }
+rmcs-resource-db = { path = "./rmcs-resource-db" }
