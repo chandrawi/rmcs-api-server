@@ -6,6 +6,10 @@ name = "rmcs-api-server"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "auth_server"
+path = "src/auth_server.rs"
+
 [dependencies]
 rmcs-auth-api = { path = "./rmcs-auth-api/rust" }
 rmcs-auth-db = { path = "./rmcs-auth-db" }
