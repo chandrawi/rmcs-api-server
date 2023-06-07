@@ -2,7 +2,7 @@ use tonic::{Request, Response, Status};
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::role::role_service_server::RoleService;
 use rmcs_auth_api::role::{
-    RoleSchema, RoleId, RoleName, RoleListRequest, RoleUpdate, RoleAccess,
+    RoleSchema, RoleId, RoleName, ApiId, UserId, RoleUpdate, RoleAccess,
     RoleReadResponse, RoleListResponse, RoleCreateResponse, RoleChangeResponse,
     ResponseStatus
 };
@@ -25,8 +25,8 @@ impl RoleService for RoleServer {
     async fn read_role(&self, request: Request<RoleId>)
         -> Result<Response<RoleReadResponse>, Status>
     {
-        let role_id = request.into_inner();
-        let result = self.auth_db.read_role(role_id.id).await;
+        let request = request.into_inner();
+        let result = self.auth_db.read_role(request.id).await;
         let (result, status) = match result {
             Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
             Err(_) => (None, ResponseStatus::Failed.into())
@@ -37,8 +37,11 @@ impl RoleService for RoleServer {
     async fn read_role_by_name(&self, request: Request<RoleName>)
         -> Result<Response<RoleReadResponse>, Status>
     {
-        let role_name = request.into_inner();
-        let result = self.auth_db.read_role_by_name(&role_name.name).await;
+        let request = request.into_inner();
+        let result = self.auth_db.read_role_by_name(
+            request.api_id,
+            &request.name
+        ).await;
         let (result, status) = match result {
             Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
             Err(_) => (None, ResponseStatus::Failed.into())
@@ -46,10 +49,26 @@ impl RoleService for RoleServer {
         Ok(Response::new(RoleReadResponse { result, status }))
     }
 
-    async fn list_role(&self, _request: Request<RoleListRequest>)
+    async fn list_role_by_api(&self, request: Request<ApiId>)
         -> Result<Response<RoleListResponse>, Status>
     {
-        let result = self.auth_db.list_role().await;
+        let request = request.into_inner();
+        let result = self.auth_db.list_role_by_api(request.api_id).await;
+        let (result, status) = match result {
+            Ok(value) => (
+                value.into_iter().map(|e| e.into()).collect(),
+                ResponseStatus::Success.into()
+            ),
+            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        };
+        Ok(Response::new(RoleListResponse { result, status }))
+    }
+
+    async fn list_role_by_user(&self, request: Request<UserId>)
+        -> Result<Response<RoleListResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.auth_db.list_role_by_user(request.user_id).await;
         let (result, status) = match result {
             Ok(value) => (
                 value.into_iter().map(|e| e.into()).collect(),
@@ -63,13 +82,14 @@ impl RoleService for RoleServer {
     async fn create_role(&self, request: Request<RoleSchema>)
         -> Result<Response<RoleCreateResponse>, Status>
     {
-        let role_schema = request.into_inner();
+        let request = request.into_inner();
         let result = self.auth_db.create_role(
-            &role_schema.name,
-            role_schema.secured,
-            role_schema.multi,
-            Some(role_schema.token_expire),
-            Some(role_schema.token_limit)
+            request.api_id,
+            &request.name,
+            request.multi,
+            request.ip_lock,
+            request.access_duration,
+            request.refresh_duration
         ).await;
         let (id, status) = match result {
             Ok(value) => (value, ResponseStatus::Success.into()),
@@ -81,14 +101,15 @@ impl RoleService for RoleServer {
     async fn update_role(&self, request: Request<RoleUpdate>)
         -> Result<Response<RoleChangeResponse>, Status>
     {
-        let role_update = request.into_inner();
+        let request = request.into_inner();
         let result = self.auth_db.update_role(
-            role_update.id,
-            role_update.name.as_deref(),
-            role_update.secured,
-            role_update.multi,
-            role_update.token_expire,
-            role_update.token_limit
+            request.id,
+            request.name.as_deref(),
+            request.multi,
+            request.ip_lock,
+            request.access_duration,
+            request.refresh_duration,
+            if request.update_key { Some(()) } else { None }
         ).await;
         let status = match result {
             Ok(_) => ResponseStatus::Success.into(),
@@ -100,8 +121,8 @@ impl RoleService for RoleServer {
     async fn delete_role(&self, request: Request<RoleId>)
         -> Result<Response<RoleChangeResponse>, Status>
     {
-        let role_id = request.into_inner();
-        let result = self.auth_db.delete_role(role_id.id).await;
+        let request = request.into_inner();
+        let result = self.auth_db.delete_role(request.id).await;
         let status = match result {
             Ok(_) => ResponseStatus::Success.into(),
             Err(_) => ResponseStatus::Failed.into()
@@ -112,8 +133,8 @@ impl RoleService for RoleServer {
     async fn add_role_access(&self, request: Request<RoleAccess>)
         -> Result<Response<RoleChangeResponse>, Status>
     {
-        let access = request.into_inner();
-        let result = self.auth_db.add_role_access(access.id, access.procedure_id).await;
+        let request = request.into_inner();
+        let result = self.auth_db.add_role_access(request.id, request.procedure_id).await;
         let status = match result {
             Ok(_) => ResponseStatus::Success.into(),
             Err(_) => ResponseStatus::Failed.into()
@@ -124,8 +145,8 @@ impl RoleService for RoleServer {
     async fn remove_role_access(&self, request: Request<RoleAccess>)
         -> Result<Response<RoleChangeResponse>, Status>
     {
-        let access = request.into_inner();
-        let result = self.auth_db.remove_role_access(access.id, access.procedure_id).await;
+        let request = request.into_inner();
+        let result = self.auth_db.remove_role_access(request.id, request.procedure_id).await;
         let status = match result {
             Ok(_) => ResponseStatus::Success.into(),
             Err(_) => ResponseStatus::Failed.into()
