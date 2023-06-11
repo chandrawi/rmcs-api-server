@@ -72,7 +72,7 @@ impl ApiService for ApiServer {
             &request.address,
             &request.category,
             &request.description,
-            request.password.as_deref().unwrap_or_default()
+            &request.password
         ).await;
         let (id, status) = match result {
             Ok(value) => (value, ResponseStatus::Success.into()),

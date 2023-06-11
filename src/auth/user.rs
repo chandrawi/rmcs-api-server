@@ -69,7 +69,7 @@ impl UserService for UserServer {
             &request.name,
             &request.email,
             &request.phone,
-            &request.password.as_deref().unwrap_or_default()
+            &request.password
         ).await;
         let (id, status) = match result {
             Ok(value) => (value, ResponseStatus::Success.into()),

@@ -108,8 +108,7 @@ impl RoleService for RoleServer {
             request.multi,
             request.ip_lock,
             request.access_duration,
-            request.refresh_duration,
-            if request.update_key { Some(()) } else { None }
+            request.refresh_duration
         ).await;
         let status = match result {
             Ok(_) => ResponseStatus::Success.into(),
