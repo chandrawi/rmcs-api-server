@@ -4,8 +4,7 @@ use rmcs_auth_db::Auth;
 use rmcs_auth_api::token::token_service_server::TokenService;
 use rmcs_auth_api::token::{
     TokenSchema, RefreshId, AccessId, UserId, TokenUpdate,
-    TokenReadResponse, TokenListResponse, TokenCreateResponse, TokenUpdateResponse, TokenChangeResponse,
-    ResponseStatus
+    TokenReadResponse, TokenListResponse, TokenCreateResponse, TokenUpdateResponse, TokenChangeResponse
 };
 
 pub struct TokenServer {
@@ -20,6 +19,11 @@ impl TokenServer {
     }
 }
 
+const TOKEN_NOT_FOUND: &str = "requested token not found";
+const TOKEN_CREATE_ERR: &str = "create token error";
+const TOKEN_UPDATE_ERR: &str = "update token error";
+const TOKEN_DELETE_ERR: &str = "delete token error";
+
 #[tonic::async_trait]
 impl TokenService for TokenServer {
 
@@ -28,11 +32,11 @@ impl TokenService for TokenServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.read_access_token(request.access_id).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
         };
-        Ok(Response::new(TokenReadResponse { result, status }))
+        Ok(Response::new(TokenReadResponse { result }))
     }
 
     async fn read_refresh_token(&self, request: Request<RefreshId>)
@@ -40,11 +44,11 @@ impl TokenService for TokenServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.read_refresh_token(&request.refresh_id).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
         };
-        Ok(Response::new(TokenReadResponse { result, status }))
+        Ok(Response::new(TokenReadResponse { result }))
     }
 
     async fn list_token_by_user(&self, request: Request<UserId>)
@@ -52,14 +56,11 @@ impl TokenService for TokenServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_token_by_user(request.user_id).await;
-        let (result, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
         };
-        Ok(Response::new(TokenListResponse { result, status }))
+        Ok(Response::new(TokenListResponse { result }))
     }
 
     async fn create_access_token(&self, request: Request<TokenSchema>)
@@ -71,11 +72,11 @@ impl TokenService for TokenServer {
             Utc.timestamp_nanos(request.expire),
             request.ip.as_slice()
         ).await;
-        let ((access_id, refresh_id), status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => ((0, String::new()), ResponseStatus::Failed.into())
+        let (access_id, refresh_id) = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(TOKEN_CREATE_ERR))
         };
-        Ok(Response::new(TokenCreateResponse { access_id, refresh_id, status }))
+        Ok(Response::new(TokenCreateResponse { access_id, refresh_id }))
     }
 
     async fn create_refresh_token(&self, request: Request<TokenSchema>)
@@ -88,11 +89,11 @@ impl TokenService for TokenServer {
             Utc.timestamp_nanos(request.expire),
             request.ip.as_slice()
         ).await;
-        let ((access_id, refresh_id), status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => ((0, String::new()), ResponseStatus::Failed.into())
+        let (access_id, refresh_id) = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(TOKEN_CREATE_ERR))
         };
-        Ok(Response::new(TokenCreateResponse { access_id, refresh_id, status }))
+        Ok(Response::new(TokenCreateResponse { access_id, refresh_id }))
     }
 
     async fn update_access_token(&self, request: Request<TokenUpdate>)
@@ -104,11 +105,11 @@ impl TokenService for TokenServer {
             request.expire.map(|s| Utc.timestamp_nanos(s)),
             request.ip.as_deref()
         ).await;
-        let (refresh_id, status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => (String::new(), ResponseStatus::Failed.into())
+        let refresh_id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(TOKEN_UPDATE_ERR))
         };
-        Ok(Response::new(TokenUpdateResponse { refresh_id, status }))
+        Ok(Response::new(TokenUpdateResponse { refresh_id }))
     }
 
     async fn update_refresh_token( &self, request: Request<TokenUpdate>)
@@ -121,11 +122,11 @@ impl TokenService for TokenServer {
             request.expire.map(|s| Utc.timestamp_nanos(s)),
             request.ip.as_deref()
         ).await;
-        let (refresh_id, status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => (String::new(), ResponseStatus::Failed.into())
+        let refresh_id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(TOKEN_UPDATE_ERR))
         };
-        Ok(Response::new(TokenUpdateResponse { refresh_id, status }))
+        Ok(Response::new(TokenUpdateResponse { refresh_id }))
     }
 
     async fn delete_access_token(&self, request: Request<AccessId>)
@@ -133,11 +134,11 @@ impl TokenService for TokenServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.delete_access_token(request.access_id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(TOKEN_DELETE_ERR))
         };
-        Ok(Response::new(TokenChangeResponse { status }))
+        Ok(Response::new(TokenChangeResponse { }))
     }
 
     async fn delete_refresh_token(&self, request: Request<RefreshId>)
@@ -145,11 +146,11 @@ impl TokenService for TokenServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.delete_refresh_token(&request.refresh_id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(TOKEN_DELETE_ERR))
         };
-        Ok(Response::new(TokenChangeResponse { status }))
+        Ok(Response::new(TokenChangeResponse { }))
     }
 
     async fn delete_token_by_user(&self, request: Request<UserId>)
@@ -157,11 +158,11 @@ impl TokenService for TokenServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.delete_token_by_user(request.user_id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(TOKEN_DELETE_ERR))
         };
-        Ok(Response::new(TokenChangeResponse { status }))
+        Ok(Response::new(TokenChangeResponse { }))
     }
 
 }

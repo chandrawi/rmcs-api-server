@@ -3,8 +3,7 @@ use rmcs_auth_db::Auth;
 use rmcs_auth_api::user::user_service_server::UserService;
 use rmcs_auth_api::user::{
     UserSchema, UserId, UserName, RoleId, UserUpdate,
-    UserReadResponse, UserListResponse, UserCreateResponse, UserChangeResponse,
-    ResponseStatus
+    UserReadResponse, UserListResponse, UserCreateResponse, UserChangeResponse
 };
 
 pub struct UserServer {
@@ -19,6 +18,11 @@ impl UserServer {
     }
 }
 
+const USER_NOT_FOUND: &str = "requested user not found";
+const USER_CREATE_ERR: &str = "create user error";
+const USER_UPDATE_ERR: &str = "update user error";
+const USER_DELETE_ERR: &str = "delete user error";
+
 #[tonic::async_trait]
 impl UserService for UserServer {
 
@@ -27,11 +31,11 @@ impl UserService for UserServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.read_user(request.id).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
         };
-        Ok(Response::new(UserReadResponse { result, status }))
+        Ok(Response::new(UserReadResponse { result }))
     }
 
     async fn read_user_by_name(&self, request: Request<UserName>)
@@ -39,11 +43,11 @@ impl UserService for UserServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.read_user_by_name(&request.name).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
         };
-        Ok(Response::new(UserReadResponse { result, status }))
+        Ok(Response::new(UserReadResponse { result }))
     }
 
     async fn list_user_by_role(&self, request: Request<RoleId>)
@@ -51,14 +55,11 @@ impl UserService for UserServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_user_by_role(request.id).await;
-        let (result, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
         };
-        Ok(Response::new(UserListResponse { result, status }))
+        Ok(Response::new(UserListResponse { result }))
     }
 
     async fn create_user(&self, request: Request<UserSchema>)
@@ -71,11 +72,11 @@ impl UserService for UserServer {
             &request.phone,
             &request.password
         ).await;
-        let (id, status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => (0, ResponseStatus::Failed.into())
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(USER_CREATE_ERR))
         };
-        Ok(Response::new(UserCreateResponse { id, status }))
+        Ok(Response::new(UserCreateResponse { id }))
     }
 
     async fn update_user(&self, request: Request<UserUpdate>)
@@ -90,11 +91,11 @@ impl UserService for UserServer {
             request.password.as_deref(),
             if request.update_key { Some(()) } else { None }
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(USER_UPDATE_ERR))
         };
-        Ok(Response::new(UserChangeResponse { status }))
+        Ok(Response::new(UserChangeResponse { }))
     }
 
     async fn delete_user(&self, request: Request<UserId>)
@@ -102,11 +103,11 @@ impl UserService for UserServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.delete_user(request.id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(USER_DELETE_ERR))
         };
-        Ok(Response::new(UserChangeResponse { status }))
+        Ok(Response::new(UserChangeResponse { }))
     }
 
 }
