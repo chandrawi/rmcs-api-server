@@ -64,7 +64,7 @@ impl AuthService for AuthServer {
                 let hash = value.password.clone();
                 let priv_key = utility::import_private_key(&priv_der)
                     .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
-                let password = utility::decrypt_message(request.password.as_bytes(), priv_key)
+                let password = utility::decrypt_message(&request.password, priv_key)
                     .map_err(|_| Status::internal(DECRYPT_ERR))?;
                 utility::verify_password(&password, &hash)
                     .map_err(|_| Status::invalid_argument(PASSWORD_MISMATCH))?;
@@ -110,7 +110,7 @@ impl AuthService for AuthServer {
                 let hash = value.password.clone();
                 let priv_key = utility::import_private_key(&priv_der)
                     .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
-                let password = utility::decrypt_message(request.password.as_bytes(), priv_key)
+                let password = utility::decrypt_message(&request.password, priv_key)
                     .map_err(|_| Status::internal(DECRYPT_ERR))?;
                 utility::verify_password(&password, &hash)
                     .map_err(|_| Status::invalid_argument(PASSWORD_MISMATCH))?;
@@ -163,7 +163,7 @@ impl AuthService for AuthServer {
             Ok(value) => {
                 // verify access token and get token claims
                 let access_key = value.access_key;
-                let token_claims = utility::verify_token(&token, &access_key)
+                let token_claims = utility::decode_token(&token, &access_key, false)
                     .map_err(|_| Status::internal(TOKEN_UNVERIFIED))?;
                 (access_key, token_claims)
             },

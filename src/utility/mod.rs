@@ -6,19 +6,19 @@ use serde::{Serialize, Deserialize};
 use rand::thread_rng;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn import_private_key(priv_der: &Vec<u8>) -> Result<RsaPrivateKey, pkcs8::Error>
+pub(crate) fn import_private_key(priv_der: &[u8]) -> Result<RsaPrivateKey, pkcs8::Error>
 {
     let priv_key = RsaPrivateKey::from_pkcs8_der(priv_der)?;
     Ok(priv_key)
 }
 
-pub(crate) fn import_public_key(pub_der: &Vec<u8>) -> Result<RsaPublicKey, spki::Error>
+pub(crate) fn import_public_key(pub_der: &[u8]) -> Result<RsaPublicKey, spki::Error>
 {
     let pub_key = RsaPublicKey::from_public_key_der(pub_der)?;
     Ok(pub_key)
 }
 
-pub fn decrypt_message(ciphertext: &[u8], priv_key: RsaPrivateKey) -> Result<Vec<u8>, rsa::Error>
+pub(crate) fn decrypt_message(ciphertext: &[u8], priv_key: RsaPrivateKey) -> Result<Vec<u8>, rsa::Error>
 {
     priv_key.decrypt(Pkcs1v15Encrypt, ciphertext)
 }
@@ -60,15 +60,16 @@ pub(crate) fn generate_token(jti: u32, sub: &str, duration: u32, key: &[u8]) -> 
     Ok(token)
 }
 
-pub(crate) fn verify_token(token: &str, key: &[u8]) -> Result<TokenClaims, jsonwebtoken::errors::Error>
+pub(crate) fn decode_token(token: &str, key: &[u8], exp_flag: bool) -> Result<TokenClaims, jsonwebtoken::errors::Error>
 {
     let decoding_key = DecodingKey::from_secret(key);
-    let validation = Validation::new(Algorithm::HS256);
+    let mut validation = Validation::new(Algorithm::HS256);
+    let req_claim: Vec<&str> = if exp_flag {
+        ["exp"].to_vec()
+    } else {
+        [].to_vec()
+    };
+    validation.set_required_spec_claims(&req_claim);
     let token_data = decode::<TokenClaims>(token, &decoding_key, &validation)?;
     Ok(token_data.claims)
 }
-
-// pub(crate) fn decode_token(token: &str)
-// {
-    
-// }
