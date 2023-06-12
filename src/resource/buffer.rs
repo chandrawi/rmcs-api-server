@@ -2,7 +2,7 @@ use tonic::{Request, Response, Status};
 use chrono::{Utc, TimeZone};
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
-use rmcs_resource_api::common::{self, ResponseStatus};
+use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
     BufferSchema, BufferId, BufferSelector, BuffersSelector, BufferUpdate,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse,
@@ -21,6 +21,11 @@ impl BufferServer {
     }
 }
 
+const BUFFER_NOT_FOUND: &str = "requested buffer not found";
+const BUFFER_CREATE_ERR: &str = "create buffer error";
+const BUFFER_UPDATE_ERR: &str = "update buffer error";
+const BUFFER_DELETE_ERR: &str = "delete buffer error";
+
 #[tonic::async_trait]
 impl BufferService for BufferServer {
 
@@ -29,11 +34,11 @@ impl BufferService for BufferServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.read_buffer(request.id).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Success.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
         };
-        Ok(Response::new(BufferReadResponse { result, status }))
+        Ok(Response::new(BufferReadResponse { result }))
     }
 
     async fn read_buffer_first(&self, request: Request<BufferSelector>)
@@ -45,11 +50,11 @@ impl BufferService for BufferServer {
             request.model_id,
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Success.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
         };
-        Ok(Response::new(BufferReadResponse { result, status }))
+        Ok(Response::new(BufferReadResponse { result }))
     }
 
     async fn read_buffer_last(&self, request: Request<BufferSelector>)
@@ -61,11 +66,11 @@ impl BufferService for BufferServer {
             request.model_id,
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Success.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
         };
-        Ok(Response::new(BufferReadResponse { result, status }))
+        Ok(Response::new(BufferReadResponse { result }))
     }
 
     async fn list_buffer_first(&self, request: Request<BuffersSelector>)
@@ -78,14 +83,11 @@ impl BufferService for BufferServer {
             request.model_id,
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Success.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
         };
-        Ok(Response::new(BufferListResponse { results, status }))
+        Ok(Response::new(BufferListResponse { results }))
     }
 
     async fn list_buffer_last(&self, request: Request<BuffersSelector>)
@@ -98,14 +100,11 @@ impl BufferService for BufferServer {
             request.model_id,
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Success.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
         };
-        Ok(Response::new(BufferListResponse { results, status }))
+        Ok(Response::new(BufferListResponse { results }))
     }
 
     async fn create_buffer(&self, request: Request<BufferSchema>)
@@ -125,11 +124,11 @@ impl BufferService for BufferServer {
             ).to_vec(),
             BufferStatus::from_i32(request.status).unwrap_or_default().as_str_name()
         ).await;
-        let (id, status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => (0, ResponseStatus::Failed.into())
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(BUFFER_CREATE_ERR))
         };
-        Ok(Response::new(BufferCreateResponse { id, status }))
+        Ok(Response::new(BufferCreateResponse { id }))
     }
 
     async fn update_buffer(&self, request: Request<BufferUpdate>)
@@ -148,11 +147,11 @@ impl BufferService for BufferServer {
             }),
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(BUFFER_UPDATE_ERR))
         };
-        Ok(Response::new(BufferChangeResponse { status }))
+        Ok(Response::new(BufferChangeResponse { }))
     }
 
     async fn delete_buffer(&self, request: Request<BufferId>)
@@ -160,11 +159,11 @@ impl BufferService for BufferServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.delete_buffer(request.id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(BUFFER_DELETE_ERR))
         };
-        Ok(Response::new(BufferChangeResponse { status }))
+        Ok(Response::new(BufferChangeResponse { }))
     }
 
 }

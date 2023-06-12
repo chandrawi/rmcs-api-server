@@ -1,7 +1,6 @@
 use tonic::{Request, Response, Status};
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::group::group_service_server::GroupService;
-use rmcs_resource_api::common::ResponseStatus;
 use rmcs_resource_api::group::{
     GroupModelSchema, GroupDeviceSchema, GroupId, GroupName, GroupCategory, GroupNameCategory, GroupUpdate,
     GroupModel, GroupDevice,
@@ -21,6 +20,13 @@ impl GroupServer {
     }
 }
 
+const GROUP_NOT_FOUND: &str = "requested group not found";
+const GROUP_CREATE_ERR: &str = "create group error";
+const GROUP_UPDATE_ERR: &str = "update group error";
+const GROUP_DELETE_ERR: &str = "delete group error";
+const ADD_MEMBER_ERR: &str = "add group member error";
+const RMV_MEMBER_ERR: &str = "remove group member error";
+
 #[tonic::async_trait]
 impl GroupService for GroupServer {
 
@@ -29,11 +35,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.read_group_model(request.id).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupModelReadResponse { result, status }))
+        Ok(Response::new(GroupModelReadResponse { result }))
     }
 
     async fn list_group_model_by_name(&self, request: Request<GroupName>)
@@ -41,14 +47,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.list_group_model_by_name(&request.name).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupModelListResponse { results, status }))
+        Ok(Response::new(GroupModelListResponse { results }))
     }
 
     async fn list_group_model_by_category(&self, request: Request<GroupCategory>)
@@ -56,14 +59,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.list_group_model_by_category(&request.category).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupModelListResponse { results, status }))
+        Ok(Response::new(GroupModelListResponse { results }))
     }
 
     async fn list_group_model_by_name_category(&self, request: Request<GroupNameCategory>)
@@ -74,14 +74,11 @@ impl GroupService for GroupServer {
             &request.name,
             &request.category
         ).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupModelListResponse { results, status }))
+        Ok(Response::new(GroupModelListResponse { results }))
     }
 
     async fn create_group_model(&self, request: Request<GroupModelSchema>)
@@ -93,11 +90,11 @@ impl GroupService for GroupServer {
             &request.category,
             Some(&request.description)
         ).await;
-        let (id, status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => (0, ResponseStatus::Failed.into())
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(GROUP_CREATE_ERR))
         };
-        Ok(Response::new(GroupCreateResponse { id, status }))
+        Ok(Response::new(GroupCreateResponse { id }))
     }
 
     async fn update_group_model(&self, request: Request<GroupUpdate>)
@@ -110,11 +107,11 @@ impl GroupService for GroupServer {
             request.category.as_deref(),
             request.description.as_deref()
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(GROUP_UPDATE_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
     async fn delete_group_model(&self, request: Request<GroupId>)
@@ -122,11 +119,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.delete_group_model(request.id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(GROUP_DELETE_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
     async fn add_group_model_member(&self, request: Request<GroupModel>)
@@ -137,11 +134,11 @@ impl GroupService for GroupServer {
             request.id,
             request.model_id
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(ADD_MEMBER_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
     async fn remove_group_model_member(&self, request: Request<GroupModel>)
@@ -152,11 +149,11 @@ impl GroupService for GroupServer {
             request.id,
             request.model_id
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(RMV_MEMBER_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
     async fn read_group_device(&self, request: Request<GroupId>)
@@ -164,11 +161,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.read_group_device(request.id).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Failed.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupDeviceReadResponse { result, status }))
+        Ok(Response::new(GroupDeviceReadResponse { result }))
     }
 
     async fn list_group_device_by_name(&self, request: Request<GroupName>)
@@ -176,14 +173,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.list_group_device_by_name(&request.name).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupDeviceListResponse { results, status }))
+        Ok(Response::new(GroupDeviceListResponse { results }))
     }
 
     async fn list_group_device_by_category(&self, request: Request<GroupCategory>)
@@ -191,14 +185,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.list_group_device_by_category(&request.category).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupDeviceListResponse { results, status }))
+        Ok(Response::new(GroupDeviceListResponse { results }))
     }
 
     async fn list_group_device_by_name_category(&self, request: Request<GroupNameCategory>)
@@ -209,14 +200,11 @@ impl GroupService for GroupServer {
             &request.name,
             &request.category
         ).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Failed.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
-        Ok(Response::new(GroupDeviceListResponse { results, status }))
+        Ok(Response::new(GroupDeviceListResponse { results }))
     }
 
     async fn create_group_device(&self, request: Request<GroupDeviceSchema>)
@@ -228,11 +216,11 @@ impl GroupService for GroupServer {
             &request.category,
             Some(&request.description)
         ).await;
-        let (id, status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => (0, ResponseStatus::Failed.into())
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(GROUP_CREATE_ERR))
         };
-        Ok(Response::new(GroupCreateResponse { id, status }))
+        Ok(Response::new(GroupCreateResponse { id }))
     }
 
     async fn update_group_device(&self, request: Request<GroupUpdate>)
@@ -245,11 +233,11 @@ impl GroupService for GroupServer {
             request.category.as_deref(),
             request.description.as_deref()
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(GROUP_UPDATE_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
     async fn delete_group_device(&self, request: Request<GroupId>)
@@ -257,11 +245,11 @@ impl GroupService for GroupServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.delete_group_device(request.id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(GROUP_DELETE_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
     async fn add_group_device_member(&self, request: Request<GroupDevice>)
@@ -272,11 +260,11 @@ impl GroupService for GroupServer {
             request.id,
             request.device_id
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(ADD_MEMBER_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
     async fn remove_group_device_member(&self, request: Request<GroupDevice>)
@@ -287,11 +275,11 @@ impl GroupService for GroupServer {
             request.id,
             request.device_id
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(RMV_MEMBER_ERR))
         };
-        Ok(Response::new(GroupChangeResponse { status }))
+        Ok(Response::new(GroupChangeResponse { }))
     }
 
 }

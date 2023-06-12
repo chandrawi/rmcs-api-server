@@ -2,7 +2,6 @@ use tonic::{Request, Response, Status};
 use chrono::{Utc, TimeZone};
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::slice::slice_service_server::SliceService;
-use rmcs_resource_api::common::ResponseStatus;
 use rmcs_resource_api::slice::{
     SliceSchema, SliceId, SliceName, SliceDevice, SliceModel, SliceDeviceModel, SliceUpdate,
     SliceReadResponse, SliceListResponse, SliceCreateResponse, SliceChangeResponse
@@ -20,6 +19,11 @@ impl SliceServer {
     }
 }
 
+const SLICE_NOT_FOUND: &str = "requested slice not found";
+const SLICE_CREATE_ERR: &str = "create slice error";
+const SLICE_UPDATE_ERR: &str = "update slice error";
+const SLICE_DELETE_ERR: &str = "delete slice error";
+
 #[tonic::async_trait]
 impl SliceService for SliceServer {
 
@@ -28,11 +32,11 @@ impl SliceService for SliceServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.read_slice(request.id).await;
-        let (result, status) = match result {
-            Ok(value) => (Some(value.into()), ResponseStatus::Success.into()),
-            Err(_) => (None, ResponseStatus::Success.into())
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
         };
-        Ok(Response::new(SliceReadResponse { result, status }))
+        Ok(Response::new(SliceReadResponse { result }))
     }
 
     async fn list_slice_by_name(&self, request: Request<SliceName>)
@@ -40,14 +44,11 @@ impl SliceService for SliceServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_name(&request.name).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Success.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
         };
-        Ok(Response::new(SliceListResponse { results, status }))
+        Ok(Response::new(SliceListResponse { results }))
     }
 
     async fn list_slice_by_device(&self, request: Request<SliceDevice>)
@@ -55,14 +56,11 @@ impl SliceService for SliceServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_device(request.device_id).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Success.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
         };
-        Ok(Response::new(SliceListResponse { results, status }))
+        Ok(Response::new(SliceListResponse { results }))
     }
 
     async fn list_slice_by_model(&self, request: Request<SliceModel>)
@@ -70,14 +68,11 @@ impl SliceService for SliceServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_model(request.model_id).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Success.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
         };
-        Ok(Response::new(SliceListResponse { results, status }))
+        Ok(Response::new(SliceListResponse { results }))
     }
 
     async fn list_slice_by_device_model(&self, request: Request<SliceDeviceModel>)
@@ -88,14 +83,11 @@ impl SliceService for SliceServer {
             request.device_id,
             request.model_id
         ).await;
-        let (results, status) = match result {
-            Ok(value) => (
-                value.into_iter().map(|e| e.into()).collect(),
-                ResponseStatus::Success.into()
-            ),
-            Err(_) => (Vec::new(), ResponseStatus::Success.into())
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
         };
-        Ok(Response::new(SliceListResponse { results, status }))
+        Ok(Response::new(SliceListResponse { results }))
     }
 
     async fn create_slice(&self, request: Request<SliceSchema>)
@@ -112,11 +104,11 @@ impl SliceService for SliceServer {
             &request.name,
             Some(&request.description)
         ).await;
-        let (id, status) = match result {
-            Ok(value) => (value, ResponseStatus::Success.into()),
-            Err(_) => (0, ResponseStatus::Failed.into())
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(SLICE_CREATE_ERR))
         };
-        Ok(Response::new(SliceCreateResponse { id, status }))
+        Ok(Response::new(SliceCreateResponse { id }))
     }
 
     async fn update_slice(&self, request: Request<SliceUpdate>)
@@ -132,11 +124,11 @@ impl SliceService for SliceServer {
             request.name.as_deref(),
             request.description.as_deref()
         ).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(SLICE_UPDATE_ERR))
         };
-        Ok(Response::new(SliceChangeResponse { status }))
+        Ok(Response::new(SliceChangeResponse { }))
     }
 
     async fn delete_slice(&self, request: Request<SliceId>)
@@ -144,11 +136,11 @@ impl SliceService for SliceServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.delete_slice(request.id).await;
-        let status = match result {
-            Ok(_) => ResponseStatus::Success.into(),
-            Err(_) => ResponseStatus::Failed.into()
+        match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(SLICE_DELETE_ERR))
         };
-        Ok(Response::new(SliceChangeResponse { status }))
+        Ok(Response::new(SliceChangeResponse { }))
     }
 
 }
