@@ -2,7 +2,7 @@ use tonic::{Request, Response, Status};
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::user::user_service_server::UserService;
 use rmcs_auth_api::user::{
-    UserSchema, UserId, UserName, RoleId, UserUpdate,
+    UserSchema, UserId, UserName, RoleId, UserUpdate, UserRole,
     UserReadResponse, UserListResponse, UserCreateResponse, UserChangeResponse
 };
 
@@ -22,6 +22,8 @@ const USER_NOT_FOUND: &str = "requested user not found";
 const USER_CREATE_ERR: &str = "create user error";
 const USER_UPDATE_ERR: &str = "update user error";
 const USER_DELETE_ERR: &str = "delete user error";
+const ADD_ROLE_ERR: &str = "add user role error";
+const RMV_ROLE_ERR: &str = "remove user role error";
 
 #[tonic::async_trait]
 impl UserService for UserServer {
@@ -106,6 +108,36 @@ impl UserService for UserServer {
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(USER_DELETE_ERR))
+        };
+        Ok(Response::new(UserChangeResponse { }))
+    }
+
+    async fn add_user_role(&self, request: Request<UserRole>)
+        -> Result<Response<UserChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.auth_db.add_user_role(
+            request.user_id,
+            request.role_id
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(ADD_ROLE_ERR))
+        };
+        Ok(Response::new(UserChangeResponse { }))
+    }
+
+    async fn remove_user_role(&self, request: Request<UserRole>)
+        -> Result<Response<UserChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.auth_db.remove_user_role(
+            request.user_id,
+            request.role_id
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(RMV_ROLE_ERR))
         };
         Ok(Response::new(UserChangeResponse { }))
     }

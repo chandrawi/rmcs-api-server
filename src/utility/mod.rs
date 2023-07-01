@@ -6,24 +6,24 @@ use serde::{Serialize, Deserialize};
 use rand::thread_rng;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub(crate) fn import_private_key(priv_der: &[u8]) -> Result<RsaPrivateKey, pkcs8::Error>
+pub fn import_private_key(priv_der: &[u8]) -> Result<RsaPrivateKey, pkcs8::Error>
 {
     let priv_key = RsaPrivateKey::from_pkcs8_der(priv_der)?;
     Ok(priv_key)
 }
 
-pub(crate) fn import_public_key(pub_der: &[u8]) -> Result<RsaPublicKey, spki::Error>
+pub fn import_public_key(pub_der: &[u8]) -> Result<RsaPublicKey, spki::Error>
 {
     let pub_key = RsaPublicKey::from_public_key_der(pub_der)?;
     Ok(pub_key)
 }
 
-pub(crate) fn decrypt_message(ciphertext: &[u8], priv_key: RsaPrivateKey) -> Result<Vec<u8>, rsa::Error>
+pub fn decrypt_message(ciphertext: &[u8], priv_key: RsaPrivateKey) -> Result<Vec<u8>, rsa::Error>
 {
     priv_key.decrypt(Pkcs1v15Encrypt, ciphertext)
 }
 
-pub(crate) fn encrypt_message(message: &[u8], pub_key: RsaPublicKey) -> Result<Vec<u8>, rsa::Error>
+pub fn encrypt_message(message: &[u8], pub_key: RsaPublicKey) -> Result<Vec<u8>, rsa::Error>
 {
     pub_key.encrypt(&mut thread_rng(), Pkcs1v15Encrypt, message)
 }
