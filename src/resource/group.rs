@@ -282,4 +282,130 @@ impl GroupService for GroupServer {
         Ok(Response::new(GroupChangeResponse { }))
     }
 
+    async fn read_group_gateway(&self, request: Request<GroupId>)
+        -> Result<Response<GroupDeviceReadResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.read_group_gateway(request.id).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+        };
+        Ok(Response::new(GroupDeviceReadResponse { result }))
+    }
+
+    async fn list_group_gateway_by_name(&self, request: Request<GroupName>)
+        -> Result<Response<GroupDeviceListResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.list_group_gateway_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+        };
+        Ok(Response::new(GroupDeviceListResponse { results }))
+    }
+
+    async fn list_group_gateway_by_category(&self, request: Request<GroupCategory>)
+        -> Result<Response<GroupDeviceListResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.list_group_gateway_by_category(&request.category).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+        };
+        Ok(Response::new(GroupDeviceListResponse { results }))
+    }
+
+    async fn list_group_gateway_by_name_category(&self, request: Request<GroupNameCategory>)
+        -> Result<Response<GroupDeviceListResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.list_group_gateway_by_name_category(
+            &request.name,
+            &request.category
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+        };
+        Ok(Response::new(GroupDeviceListResponse { results }))
+    }
+
+    async fn create_group_gateway(&self, request: Request<GroupDeviceSchema>)
+        -> Result<Response<GroupCreateResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.create_group_gateway(
+            &request.name,
+            &request.category,
+            Some(&request.description)
+        ).await;
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(GROUP_CREATE_ERR))
+        };
+        Ok(Response::new(GroupCreateResponse { id }))
+    }
+
+    async fn update_group_gateway(&self, request: Request<GroupUpdate>)
+        -> Result<Response<GroupChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.update_group_gateway(
+            request.id,
+            request.name.as_deref(),
+            request.category.as_deref(),
+            request.description.as_deref()
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(GROUP_UPDATE_ERR))
+        };
+        Ok(Response::new(GroupChangeResponse { }))
+    }
+
+    async fn delete_group_gateway(&self, request: Request<GroupId>)
+        -> Result<Response<GroupChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.delete_group_gateway(request.id).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(GROUP_DELETE_ERR))
+        };
+        Ok(Response::new(GroupChangeResponse { }))
+    }
+
+    async fn add_group_gateway_member(&self, request: Request<GroupDevice>)
+        -> Result<Response<GroupChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.add_group_gateway_member(
+            request.id,
+            request.device_id
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(ADD_MEMBER_ERR))
+        };
+        Ok(Response::new(GroupChangeResponse { }))
+    }
+
+    async fn remove_group_gateway_member(&self, request: Request<GroupDevice>)
+        -> Result<Response<GroupChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.remove_group_gateway_member(
+            request.id,
+            request.device_id
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(RMV_MEMBER_ERR))
+        };
+        Ok(Response::new(GroupChangeResponse { }))
+    }
+
 }

@@ -57,11 +57,11 @@ impl UserService for UserServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_user_by_role(request.id).await;
-        let result = match result {
+        let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
         };
-        Ok(Response::new(UserListResponse { result }))
+        Ok(Response::new(UserListResponse { results }))
     }
 
     async fn create_user(&self, request: Request<UserSchema>)

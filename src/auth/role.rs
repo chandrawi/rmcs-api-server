@@ -60,11 +60,11 @@ impl RoleService for RoleServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_role_by_api(request.api_id).await;
-        let result = match result {
+        let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
         };
-        Ok(Response::new(RoleListResponse { result }))
+        Ok(Response::new(RoleListResponse { results }))
     }
 
     async fn list_role_by_user(&self, request: Request<UserId>)
@@ -72,11 +72,11 @@ impl RoleService for RoleServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_role_by_user(request.user_id).await;
-        let result = match result {
+        let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
         };
-        Ok(Response::new(RoleListResponse { result }))
+        Ok(Response::new(RoleListResponse { results }))
     }
 
     async fn create_role(&self, request: Request<RoleSchema>)

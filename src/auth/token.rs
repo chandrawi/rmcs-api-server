@@ -56,11 +56,11 @@ impl TokenService for TokenServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_token_by_user(request.user_id).await;
-        let result = match result {
+        let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
         };
-        Ok(Response::new(TokenListResponse { result }))
+        Ok(Response::new(TokenListResponse { results }))
     }
 
     async fn create_access_token(&self, request: Request<TokenSchema>)

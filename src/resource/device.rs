@@ -282,7 +282,7 @@ impl DeviceService for DeviceServer {
         Ok(Response::new(GatewayChangeResponse { }))
     }
 
-    async fn read_device_config(&self, request: Request<ConfigId>,)
+    async fn read_device_config(&self, request: Request<ConfigId>)
         -> Result<Response<ConfigReadResponse>, Status>
     {
         let request = request.into_inner();
@@ -353,6 +353,84 @@ impl DeviceService for DeviceServer {
     {
         let request = request.into_inner();
         let result = self.resource_db.delete_device_config(request.id).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(CFG_DELETE_ERR))
+        };
+        Ok(Response::new(ConfigChangeResponse { }))
+    }
+
+    async fn read_gateway_config(&self, request: Request<ConfigId>)
+        -> Result<Response<ConfigReadResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.read_gateway_config(request.id).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+        };
+        Ok(Response::new(ConfigReadResponse { result }))
+    }
+
+    async fn list_gateway_config(&self, request: Request<GatewayId>)
+        -> Result<Response<ConfigListResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.list_gateway_config_by_gateway(request.id).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+        };
+        Ok(Response::new(ConfigListResponse { results }))
+    }
+
+    async fn create_gateway_config(&self, request: Request<ConfigSchema>)
+        -> Result<Response<ConfigCreateResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.create_gateway_config(
+            request.device_id,
+            &request.name,
+            ConfigValue::from_bytes(
+                &request.config_bytes, 
+                ConfigType::from(common::ConfigType::from_i32(request.config_type).unwrap_or_default())
+            ),
+            &request.category
+        ).await;
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(CFG_CREATE_ERR))
+        };
+        Ok(Response::new(ConfigCreateResponse { id }))
+    }
+
+    async fn update_gateway_config(&self, request: Request<ConfigUpdate>)
+        -> Result<Response<ConfigChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.update_gateway_config(
+            request.id,
+            request.name.as_deref(),
+            request.config_bytes.map(|s| {
+                ConfigValue::from_bytes(
+                    &s,
+                    ConfigType::from(common::ConfigType::from_i32(request.config_type.unwrap_or_default()).unwrap_or_default())
+                )
+            }),
+            request.category.as_deref()
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(CFG_UPDATE_ERR))
+        };
+        Ok(Response::new(ConfigChangeResponse { }))
+    }
+
+    async fn delete_gateway_config(&self, request: Request<ConfigId>)
+        -> Result<Response<ConfigChangeResponse>, Status>
+    {
+        let request = request.into_inner();
+        let result = self.resource_db.delete_gateway_config(request.id).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(CFG_DELETE_ERR))

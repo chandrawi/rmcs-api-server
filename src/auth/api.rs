@@ -61,11 +61,11 @@ impl ApiService for ApiServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_api_by_category(&request.category).await;
-        let result = match result {
+        let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(API_NOT_FOUND))
         };
-        Ok(Response::new(ApiListResponse { result }))
+        Ok(Response::new(ApiListResponse { results }))
     }
 
     async fn create_api(&self, request: Request<ApiSchema>)
@@ -150,11 +150,11 @@ impl ApiService for ApiServer {
     {
         let request = request.into_inner();
         let result = self.auth_db.list_procedure_by_api(request.id).await;
-        let result = match result {
+        let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
         };
-        Ok(Response::new(ProcedureListResponse { result }))
+        Ok(Response::new(ProcedureListResponse { results }))
     }
 
     async fn create_procedure(&self, request: Request<ProcedureSchema>)
