@@ -8,23 +8,31 @@ use rmcs_resource_api::log::{
     LogReadResponse, LogListResponse, LogChangeResponse,
     LogStatus
 };
+use crate::utility::validator::{AccessValidator, AccessSchema};
+use super::{
+    READ_LOG, LIST_LOG_BY_TIME, LIST_LOG_BY_LAST_TIME, LIST_LOG_BY_RANGE_TIME,
+    CREATE_LOG, UPDATE_LOG, DELETE_LOG
+};
+use super::{
+    LOG_NOT_FOUND, LOG_CREATE_ERR, LOG_UPDATE_ERR, LOG_DELETE_ERR
+};
 
+#[derive(Debug)]
 pub struct LogServer {
-    pub resource_db: Resource
+    resource_db: Resource,
+    token_key: Vec<u8>,
+    accesses: Vec<AccessSchema>
 }
 
 impl LogServer {
     pub fn new(resource_db: Resource) -> Self {
         Self {
-            resource_db
+            resource_db,
+            token_key: Vec::new(),
+            accesses: Vec::new()
         }
     }
 }
-
-const LOG_NOT_FOUND: &str = "requested log not found";
-const LOG_CREATE_ERR: &str = "create log error";
-const LOG_UPDATE_ERR: &str = "update log error";
-const LOG_DELETE_ERR: &str = "delete log error";
 
 #[tonic::async_trait]
 impl LogService for LogServer {
@@ -32,6 +40,7 @@ impl LogService for LogServer {
     async fn read_log(&self, request: Request<LogId>)
         -> Result<Response<LogReadResponse>, Status>
     {
+        self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.read_log(
             Utc.timestamp_nanos(request.timestamp),
@@ -47,6 +56,7 @@ impl LogService for LogServer {
     async fn list_log_by_time(&self, request: Request<LogTime>)
         -> Result<Response<LogListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_LOG_BY_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_time(
             Utc.timestamp_nanos(request.timestamp),
@@ -63,6 +73,7 @@ impl LogService for LogServer {
     async fn list_log_by_last_time(&self, request: Request<LogTime>)
         -> Result<Response<LogListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_LOG_BY_LAST_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_last_time(
             Utc.timestamp_nanos(request.timestamp),
@@ -79,6 +90,7 @@ impl LogService for LogServer {
     async fn list_log_by_range_time(&self, request: Request<LogRange>)
         -> Result<Response<LogListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_LOG_BY_RANGE_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_range_time(
             Utc.timestamp_nanos(request.begin),
@@ -96,6 +108,7 @@ impl LogService for LogServer {
     async fn create_log(&self, request: Request<LogSchema>)
         -> Result<Response<LogChangeResponse>, Status>
     {
+        self.validate(request.extensions(), CREATE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_log(
             Utc.timestamp_nanos(request.timestamp),
@@ -116,6 +129,7 @@ impl LogService for LogServer {
     async fn update_log(&self, request: Request<LogUpdate>)
     -> Result<Response<LogChangeResponse>, Status>
     {
+        self.validate(request.extensions(), UPDATE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.update_log(
             Utc.timestamp_nanos(request.timestamp),
@@ -138,6 +152,7 @@ impl LogService for LogServer {
     async fn delete_log(&self, request: Request<LogId>)
         -> Result<Response<LogChangeResponse>, Status>
     {
+        self.validate(request.extensions(), DELETE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_log(
             Utc.timestamp_nanos(request.timestamp),
@@ -148,6 +163,36 @@ impl LogService for LogServer {
             Err(_) => return Err(Status::internal(LOG_DELETE_ERR))
         };
         Ok(Response::new(LogChangeResponse { }))
+    }
+
+}
+
+impl AccessValidator for LogServer {
+
+    fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
+        const PROCEDURES: &[&str] = &[
+            READ_LOG, LIST_LOG_BY_TIME, LIST_LOG_BY_LAST_TIME, LIST_LOG_BY_RANGE_TIME,
+            CREATE_LOG, UPDATE_LOG, DELETE_LOG
+        ];
+        self.token_key = token_key.to_owned();
+        self.accesses = PROCEDURES.into_iter().map(|&s| AccessSchema {
+            procedure: s.to_owned(),
+            roles: accesses.iter()
+                .filter(|&a| a.procedure == s)
+                .map(|a| a.roles.clone())
+                .next()
+                .unwrap_or_default()
+        })
+        .collect();
+        self
+    }
+
+    fn token_key(&self) -> Vec<u8> {
+        self.token_key.clone()
+    }
+
+    fn accesses(&self) -> Vec<AccessSchema> {
+        self.accesses.clone()
     }
 
 }

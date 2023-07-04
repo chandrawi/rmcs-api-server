@@ -8,29 +8,33 @@ use rmcs_resource_api::model::{
     ModelReadResponse, ModelListResponse, ModelCreateResponse, ModelChangeResponse,
     ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse
 };
+use crate::utility::validator::{AccessValidator, AccessSchema};
+use super::{
+    READ_MODEL, LIST_MODEL_BY_NAME, LIST_MODEL_BY_CATEGORY, LIST_MODEL_BY_NAME_CATEGORY,
+    CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, ADD_MODEL_TYPE, REMOVE_MODEL_TYPE,
+    READ_MODEL_CONFIG, LIST_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
+};
+use super::{
+    MODEL_NOT_FOUND, MODEL_CREATE_ERR, MODEL_UPDATE_ERR, MODEL_DELETE_ERR, ADD_TYPE_ERR, RMV_TYPE_ERR,
+    CFG_NOT_FOUND, CFG_CREATE_ERR, CFG_UPDATE_ERR, CFG_DELETE_ERR
+};
 
+#[derive(Debug)]
 pub struct ModelServer {
-    pub resource_db: Resource
+    resource_db: Resource,
+    token_key: Vec<u8>,
+    accesses: Vec<AccessSchema>
 }
 
 impl ModelServer {
     pub fn new(resource_db: Resource) -> Self {
         Self {
-            resource_db
+            resource_db,
+            token_key: Vec::new(),
+            accesses: Vec::new()
         }
     }
 }
-
-const MODEL_NOT_FOUND: &str = "requested model not found";
-const MODEL_CREATE_ERR: &str = "create model error";
-const MODEL_UPDATE_ERR: &str = "update model error";
-const MODEL_DELETE_ERR: &str = "delete model error";
-const ADD_TYPE_ERR: &str = "add model type error";
-const RMV_TYPE_ERR: &str = "remove model type error";
-const CFG_NOT_FOUND: &str = "requested config not found";
-const CFG_CREATE_ERR: &str = "create config error";
-const CFG_UPDATE_ERR: &str = "update config error";
-const CFG_DELETE_ERR: &str = "delete config error";
 
 #[tonic::async_trait]
 impl ModelService for ModelServer {
@@ -38,6 +42,7 @@ impl ModelService for ModelServer {
     async fn read_model(&self, request: Request<ModelId>)
         -> Result<Response<ModelReadResponse>, Status>
     {
+        self.validate(request.extensions(), READ_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.read_model(request.id).await;
         let result = match result {
@@ -50,6 +55,7 @@ impl ModelService for ModelServer {
     async fn list_model_by_name(&self, request: Request<ModelName>)
         -> Result<Response<ModelListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_MODEL_BY_NAME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_by_name(&request.name).await;
         let results = match result {
@@ -62,6 +68,7 @@ impl ModelService for ModelServer {
     async fn list_model_by_category(&self, request: Request<ModelCategory>)
         -> Result<Response<ModelListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_MODEL_BY_CATEGORY)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_by_category(&request.category).await;
         let results = match result {
@@ -74,6 +81,7 @@ impl ModelService for ModelServer {
     async fn list_model_by_name_category(&self, request: Request<ModelNameCategory>)
         -> Result<Response<ModelListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_MODEL_BY_NAME_CATEGORY)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_by_name_category(
             &request.name,
@@ -89,6 +97,7 @@ impl ModelService for ModelServer {
     async fn create_model(&self, request: Request<ModelSchema>)
         -> Result<Response<ModelCreateResponse>, Status>
     {
+        self.validate(request.extensions(), CREATE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.create_model(
             DataIndexing::from(common::DataIndexing::from_i32(request.indexing).unwrap_or_default()),
@@ -106,6 +115,7 @@ impl ModelService for ModelServer {
     async fn update_model(&self, request: Request<ModelUpdate>)
         -> Result<Response<ModelChangeResponse>, Status>
     {
+        self.validate(request.extensions(), UPDATE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.update_model(
             request.id,
@@ -124,6 +134,7 @@ impl ModelService for ModelServer {
     async fn delete_model(&self, request: Request<ModelId>)
         -> Result<Response<ModelChangeResponse>, Status>
     {
+        self.validate(request.extensions(), DELETE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_model(request.id).await;
         match result {
@@ -136,6 +147,7 @@ impl ModelService for ModelServer {
     async fn add_model_type(&self, request: Request<ModelTypes>)
         -> Result<Response<ModelChangeResponse>, Status>
     {
+        self.validate(request.extensions(), ADD_MODEL_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.add_model_type(
             request.id,
@@ -153,6 +165,7 @@ impl ModelService for ModelServer {
     async fn remove_model_type(&self, request: Request<ModelId>)
         -> Result<Response<ModelChangeResponse>, Status>
     {
+        self.validate(request.extensions(), REMOVE_MODEL_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_model_type(request.id).await;
         match result {
@@ -165,6 +178,7 @@ impl ModelService for ModelServer {
     async fn read_model_config(&self, request: Request<ConfigId>)
         -> Result<Response<ConfigReadResponse>, Status>
     {
+        self.validate(request.extensions(), READ_MODEL_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.read_model_config(request.id).await;
         let result = match result {
@@ -177,6 +191,7 @@ impl ModelService for ModelServer {
     async fn list_model_config(&self, request: Request<ModelId>)
         -> Result<Response<ConfigListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_MODEL_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_config_by_model(request.id).await;
         let results = match result {
@@ -189,6 +204,7 @@ impl ModelService for ModelServer {
     async fn create_model_config(&self, request: Request<ConfigSchema>)
         -> Result<Response<ConfigCreateResponse>, Status>
     {
+        self.validate(request.extensions(), CREATE_MODEL_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_model_config(
             request.model_id,
@@ -210,6 +226,7 @@ impl ModelService for ModelServer {
     async fn update_model_config(&self, request: Request<ConfigUpdate>)
         -> Result<Response<ConfigChangeResponse>, Status>
     {
+        self.validate(request.extensions(), UPDATE_MODEL_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.update_model_config(
             request.id,
@@ -232,6 +249,7 @@ impl ModelService for ModelServer {
     async fn delete_model_config(&self, request: Request<ConfigId>)
         -> Result<Response<ConfigChangeResponse>, Status>
     {
+        self.validate(request.extensions(), DELETE_MODEL_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_model_config(request.id).await;
         match result {
@@ -239,6 +257,37 @@ impl ModelService for ModelServer {
             Err(_) => return Err(Status::internal(CFG_DELETE_ERR))
         };
         Ok(Response::new(ConfigChangeResponse { }))
+    }
+
+}
+
+impl AccessValidator for ModelServer {
+
+    fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
+        const PROCEDURES: &[&str] = &[
+            READ_MODEL, LIST_MODEL_BY_NAME, LIST_MODEL_BY_CATEGORY, LIST_MODEL_BY_NAME_CATEGORY,
+            CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, ADD_MODEL_TYPE, REMOVE_MODEL_TYPE,
+            READ_MODEL_CONFIG, LIST_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
+        ];
+        self.token_key = token_key.to_owned();
+        self.accesses = PROCEDURES.into_iter().map(|&s| AccessSchema {
+            procedure: s.to_owned(),
+            roles: accesses.iter()
+                .filter(|&a| a.procedure == s)
+                .map(|a| a.roles.clone())
+                .next()
+                .unwrap_or_default()
+        })
+        .collect();
+        self
+    }
+
+    fn token_key(&self) -> Vec<u8> {
+        self.token_key.clone()
+    }
+
+    fn accesses(&self) -> Vec<AccessSchema> {
+        self.accesses.clone()
     }
 
 }

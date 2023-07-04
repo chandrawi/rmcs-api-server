@@ -6,23 +6,31 @@ use rmcs_resource_api::slice::{
     SliceSchema, SliceId, SliceName, SliceDevice, SliceModel, SliceDeviceModel, SliceUpdate,
     SliceReadResponse, SliceListResponse, SliceCreateResponse, SliceChangeResponse
 };
+use crate::utility::validator::{AccessValidator, AccessSchema};
+use super::{
+    READ_SLICE, LIST_SLICE_BY_NAME, LIST_SLICE_BY_DEVICE, LIST_SLICE_BY_MODEL, LIST_SLICE_BY_DEVICE_MODEL,
+    CREATE_SLICE, UPDATE_SLICE, DELETE_SLICE
+};
+use super::{
+    SLICE_NOT_FOUND, SLICE_CREATE_ERR, SLICE_UPDATE_ERR, SLICE_DELETE_ERR
+};
 
+#[derive(Debug)]
 pub struct SliceServer {
-    pub resource_db: Resource
+    resource_db: Resource,
+    token_key: Vec<u8>,
+    accesses: Vec<AccessSchema>
 }
 
 impl SliceServer {
     pub fn new(resource_db: Resource) -> Self {
         Self {
-            resource_db
+            resource_db,
+            token_key: Vec::new(),
+            accesses: Vec::new()
         }
     }
 }
-
-const SLICE_NOT_FOUND: &str = "requested slice not found";
-const SLICE_CREATE_ERR: &str = "create slice error";
-const SLICE_UPDATE_ERR: &str = "update slice error";
-const SLICE_DELETE_ERR: &str = "delete slice error";
 
 #[tonic::async_trait]
 impl SliceService for SliceServer {
@@ -30,6 +38,7 @@ impl SliceService for SliceServer {
     async fn read_slice(&self, request: Request<SliceId>)
         -> Result<Response<SliceReadResponse>, Status>
     {
+        self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.read_slice(request.id).await;
         let result = match result {
@@ -42,6 +51,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_name(&self, request: Request<SliceName>)
         -> Result<Response<SliceListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_SLICE_BY_NAME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_name(&request.name).await;
         let results = match result {
@@ -54,6 +64,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_device(&self, request: Request<SliceDevice>)
         -> Result<Response<SliceListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_SLICE_BY_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_device(request.device_id).await;
         let results = match result {
@@ -66,6 +77,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_model(&self, request: Request<SliceModel>)
         -> Result<Response<SliceListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_SLICE_BY_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_model(request.model_id).await;
         let results = match result {
@@ -78,6 +90,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_device_model(&self, request: Request<SliceDeviceModel>)
         -> Result<Response<SliceListResponse>, Status>
     {
+        self.validate(request.extensions(), LIST_SLICE_BY_DEVICE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_device_model(
             request.device_id,
@@ -93,6 +106,7 @@ impl SliceService for SliceServer {
     async fn create_slice(&self, request: Request<SliceSchema>)
         -> Result<Response<SliceCreateResponse>, Status>
     {
+        self.validate(request.extensions(), CREATE_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.create_slice(
             request.device_id,
@@ -114,6 +128,7 @@ impl SliceService for SliceServer {
     async fn update_slice(&self, request: Request<SliceUpdate>)
         -> Result<Response<SliceChangeResponse>, Status>
     {
+        self.validate(request.extensions(), UPDATE_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.update_slice(
             request.id,
@@ -134,6 +149,7 @@ impl SliceService for SliceServer {
     async fn delete_slice(&self, request: Request<SliceId>)
     -> Result<Response<SliceChangeResponse>, Status>
     {
+        self.validate(request.extensions(), DELETE_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_slice(request.id).await;
         match result {
@@ -141,6 +157,36 @@ impl SliceService for SliceServer {
             Err(_) => return Err(Status::internal(SLICE_DELETE_ERR))
         };
         Ok(Response::new(SliceChangeResponse { }))
+    }
+
+}
+
+impl AccessValidator for SliceServer {
+
+    fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
+        const PROCEDURES: &[&str] = &[
+            READ_SLICE, LIST_SLICE_BY_NAME, LIST_SLICE_BY_DEVICE, LIST_SLICE_BY_MODEL, LIST_SLICE_BY_DEVICE_MODEL,
+            CREATE_SLICE, UPDATE_SLICE, DELETE_SLICE
+        ];
+        self.token_key = token_key.to_owned();
+        self.accesses = PROCEDURES.into_iter().map(|&s| AccessSchema {
+            procedure: s.to_owned(),
+            roles: accesses.iter()
+                .filter(|&a| a.procedure == s)
+                .map(|a| a.roles.clone())
+                .next()
+                .unwrap_or_default()
+        })
+        .collect();
+        self
+    }
+
+    fn token_key(&self) -> Vec<u8> {
+        self.token_key.clone()
+    }
+
+    fn accesses(&self) -> Vec<AccessSchema> {
+        self.accesses.clone()
     }
 
 }
