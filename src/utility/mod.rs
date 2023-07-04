@@ -1,10 +1,11 @@
+pub(crate) mod token;
+pub mod validator;
+
 use rsa::{RsaPrivateKey, Pkcs1v15Encrypt, RsaPublicKey};
 use pkcs8::{DecodePrivateKey, DecodePublicKey};
 use argon2::{Argon2, PasswordVerifier, password_hash::PasswordHash};
-use jsonwebtoken::{encode, decode, DecodingKey, EncodingKey, Header, Algorithm, Validation};
-use serde::{Serialize, Deserialize};
 use rand::thread_rng;
-use std::time::{SystemTime, UNIX_EPOCH};
+use tonic::{Request, Status};
 
 pub fn import_private_key(priv_der: &[u8]) -> Result<RsaPrivateKey, pkcs8::Error>
 {
@@ -35,41 +36,19 @@ pub(crate) fn verify_password(password: &[u8], hash: &str) -> Result<(), argon2:
     argon2.verify_password(password, &parsed_hash)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TokenClaims {
-    pub jti: u32,
-    pub sub: String,
-    pub iat: u64,
-    pub exp: u64,
-}
-
-pub(crate) fn generate_token(jti: u32, sub: &str, duration: u32, key: &[u8]) -> Result<String, jsonwebtoken::errors::Error>
+pub fn interceptor(mut request: Request<()>) -> Result<Request<()>, Status>
 {
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let iat = now.as_secs();
-    let exp = iat + duration as u64;
-    let claims = TokenClaims {
-        jti,
-        sub: sub.to_owned(),
-        iat,
-        exp
+    let token = match request.metadata().get("authorization") {
+        Some(value) => match value.to_str() {
+            Ok(v) => v,
+            Err(e) => return Err(Status::unauthenticated(format!("{}", e)))
+        },
+        None => return Err(Status::unauthenticated("Token not found"))
     };
-    let header = Header::new(Algorithm::HS256);
-    let encoding_key = EncodingKey::from_secret(key);
-    let token = encode(&header, &claims, &encoding_key)?;
-    Ok(token)
-}
-
-pub(crate) fn decode_token(token: &str, key: &[u8], exp_flag: bool) -> Result<TokenClaims, jsonwebtoken::errors::Error>
-{
-    let decoding_key = DecodingKey::from_secret(key);
-    let mut validation = Validation::new(Algorithm::HS256);
-    let req_claim: Vec<&str> = if exp_flag {
-        ["exp"].to_vec()
-    } else {
-        [].to_vec()
+    let token = match token.strip_prefix("Bearer ") {
+        Some(value) => value.to_owned(),
+        None => return Err(Status::unauthenticated("authorization header must in format 'Bearer <TOKEN>'"))
     };
-    validation.set_required_spec_claims(&req_claim);
-    let token_data = decode::<TokenClaims>(token, &decoding_key, &validation)?;
-    Ok(token_data.claims)
+    request.extensions_mut().insert(token);
+    Ok(request)
 }

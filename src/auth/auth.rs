@@ -8,7 +8,7 @@ use rmcs_auth_api::auth::{
     UserRefreshRequest, UserRefreshResponse, UserLogoutRequest, UserLogoutResponse,
     ProcedureMap, AccessTokenMap
 };
-use crate::utility;
+use crate::utility::{self, token};
 
 pub struct AuthServer {
     pub auth_db: Auth
@@ -132,7 +132,7 @@ impl AuthService for AuthServer {
                     .map_err(|_| Status::internal(CREATE_TOKEN_ERR))?;
                 let tokens: Vec<AccessTokenMap> = value.roles.iter().map(|e| AccessTokenMap {
                     api_id: e.api_id,
-                    access_token: utility::generate_token(access_id, &e.role, e.access_duration, &e.access_key)
+                    access_token: token::generate_token(access_id, &e.role, e.access_duration, &e.access_key)
                         .unwrap_or(String::new())
                 })
                 .filter(|e| e.access_token != String::new())
@@ -163,7 +163,7 @@ impl AuthService for AuthServer {
             Ok(value) => {
                 // verify access token and get token claims
                 let access_key = value.access_key;
-                let token_claims = utility::decode_token(&token, &access_key, false)
+                let token_claims = token::decode_token(&token, &access_key, false)
                     .map_err(|_| Status::internal(TOKEN_UNVERIFIED))?;
                 (access_key, token_claims)
             },
@@ -184,7 +184,7 @@ impl AuthService for AuthServer {
                         .update_access_token(token_claims.jti, Some(value.expire), None).await
                         .map_err(|_| Status::internal(UPDATE_TOKEN_ERR))?;
                     let duration = (token_claims.exp - token_claims.iat) as u32;
-                    let access_token = utility::generate_token(token_claims.jti, &token_claims.sub, duration, &access_key)
+                    let access_token = token::generate_token(token_claims.jti, &token_claims.sub, duration, &access_key)
                         .map_err(|_| Status::internal(GENERATE_TOKEN_ERR))?;
                     (refresh_id, access_token)
                 } else {
