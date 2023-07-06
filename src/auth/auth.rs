@@ -9,6 +9,11 @@ use rmcs_auth_api::auth::{
     ProcedureMap, AccessTokenMap
 };
 use crate::utility::{self, token};
+use super::{
+    API_ID_NOT_FOUND, USERNAME_NOT_FOUND, KEY_IMPORT_ERR, DECRYPT_ERR, ENCRYPT_ERR, PASSWORD_MISMATCH,
+    TOKEN_NOT_FOUND, CREATE_TOKEN_ERR, UPDATE_TOKEN_ERR, DELETE_TOKEN_ERR,
+    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED
+};
 
 pub struct AuthServer {
     pub auth_db: Auth
@@ -21,20 +26,6 @@ impl AuthServer {
         }
     }
 }
-
-const API_ID_NOT_FOUND: &str = "requested api id not found";
-const USERNAME_NOT_FOUND: &str = "requested username not found";
-const KEY_IMPORT_ERR: &str = "key import error";
-const DECRYPT_ERR: &str = "decrypt password error";
-const ENCRYPT_ERR: &str = "encrypt key error";
-const PASSWORD_MISMATCH: &str = "password does not match";
-const TOKEN_NOT_FOUND: &str = "requested token not found";
-const CREATE_TOKEN_ERR: &str = "error create token";
-const UPDATE_TOKEN_ERR: &str = "error update token";
-const DELETE_TOKEN_ERR: &str = "error delete token";
-const GENERATE_TOKEN_ERR: &str = "error generate token";
-const TOKEN_MISMATCH: &str = "refresh token is not match";
-const TOKEN_UNVERIFIED: &str = "token unverified";
 
 #[tonic::async_trait]
 impl AuthService for AuthServer {

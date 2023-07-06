@@ -7,27 +7,25 @@ use rmcs_auth_api::api::{
     ApiReadResponse, ApiListResponse, ApiCreateResponse, ApiChangeResponse,
     ProcedureReadResponse, ProcedureListResponse, ProcedureCreateResponse, ProcedureChangeResponse
 };
+use crate::utility::validator::{AuthValidator, ValidatorKind};
+use super::{
+    API_NOT_FOUND, API_CREATE_ERR, API_UPDATE_ERR, API_DELETE_ERR, 
+    PROC_NOT_FOUND, PROC_CREATE_ERR, PROC_UPDATE_ERR, PROC_DELETE_ERR
+};
 
 pub struct ApiServer {
-    pub auth_db: Auth
+    pub auth_db: Auth,
+    pub validator_flag: bool
 }
 
 impl ApiServer {
     pub fn new(auth_db: Auth) -> Self {
         ApiServer {
-            auth_db
+            auth_db,
+            validator_flag: false
         }
     }
 }
-
-const API_NOT_FOUND: &str = "requested api not found";
-const API_CREATE_ERR: &str = "create api error";
-const API_UPDATE_ERR: &str = "update api error";
-const API_DELETE_ERR: &str = "delete api error";
-const PROC_NOT_FOUND: &str = "requested procedure not found";
-const PROC_CREATE_ERR: &str = "create procedure error";
-const PROC_UPDATE_ERR: &str = "update procedure error";
-const PROC_DELETE_ERR: &str = "delete procedure error";
 
 #[tonic::async_trait]
 impl ApiService for ApiServer {
@@ -35,6 +33,7 @@ impl ApiService for ApiServer {
     async fn read_api(&self, request: Request<ApiId>)
         -> Result<Response<ApiReadResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.read_api(request.id).await;
         let result = match result {
@@ -47,6 +46,7 @@ impl ApiService for ApiServer {
     async fn read_api_by_name(&self, request: Request<ApiName>)
         -> Result<Response<ApiReadResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.read_api_by_name(&request.name).await;
         let result = match result {
@@ -59,6 +59,7 @@ impl ApiService for ApiServer {
     async fn list_api_by_category(&self, request: Request<ApiCategory>)
         -> Result<Response<ApiListResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.list_api_by_category(&request.category).await;
         let results = match result {
@@ -71,6 +72,7 @@ impl ApiService for ApiServer {
     async fn create_api(&self, request: Request<ApiSchema>)
         -> Result<Response<ApiCreateResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_api(
             &request.name, 
@@ -89,6 +91,7 @@ impl ApiService for ApiServer {
     async fn update_api(&self, request: Request<ApiUpdate>)
         -> Result<Response<ApiChangeResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.update_api(
             request.id,
@@ -109,6 +112,7 @@ impl ApiService for ApiServer {
     async fn delete_api(&self, request: Request<ApiId>)
         -> Result<Response<ApiChangeResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.delete_api(request.id).await;
         match result {
@@ -121,6 +125,7 @@ impl ApiService for ApiServer {
     async fn read_procedure(&self, request: Request<ProcedureId>)
         -> Result<Response<ProcedureReadResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.read_procedure(request.id).await;
         let result = match result {
@@ -133,6 +138,7 @@ impl ApiService for ApiServer {
     async fn read_procedure_by_name(&self, request: Request<ProcedureName>)
         -> Result<Response<ProcedureReadResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.read_procedure_by_name(
             request.api_id,
@@ -148,6 +154,7 @@ impl ApiService for ApiServer {
     async fn list_procedure_by_api(&self, request: Request<ApiId>)
         -> Result<Response<ProcedureListResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.list_procedure_by_api(request.id).await;
         let results = match result {
@@ -160,6 +167,7 @@ impl ApiService for ApiServer {
     async fn create_procedure(&self, request: Request<ProcedureSchema>)
         -> Result<Response<ProcedureCreateResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_procedure(
             request.api_id,
@@ -176,6 +184,7 @@ impl ApiService for ApiServer {
     async fn update_procedure(&self, request: Request<ProcedureUpdate>)
         -> Result<Response<ProcedureChangeResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.update_procedure(
             request.id,
@@ -192,6 +201,7 @@ impl ApiService for ApiServer {
     async fn delete_procedure(&self, request: Request<ProcedureId>)
         -> Result<Response<ProcedureChangeResponse>, Status>
     {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.delete_procedure(request.id).await;
         match result {
@@ -199,6 +209,23 @@ impl ApiService for ApiServer {
             Err(_) => return Err(Status::internal(PROC_DELETE_ERR))
         };
         Ok(Response::new(ProcedureChangeResponse { }))
+    }
+
+}
+
+impl AuthValidator for ApiServer {
+
+    fn with_validator(mut self) -> Self {
+        self.validator_flag = true;
+        self
+    }
+
+    fn validator_flag(&self) -> bool {
+        self.validator_flag
+    }
+
+    fn auth_db(&self) ->  &Auth {
+        &self.auth_db
     }
 
 }
