@@ -33,7 +33,6 @@ const CREATE_TOKEN_ERR: &str = "error create token";
 const UPDATE_TOKEN_ERR: &str = "error update token";
 const DELETE_TOKEN_ERR: &str = "error delete token";
 const GENERATE_TOKEN_ERR: &str = "error generate token";
-const TOKEN_MISSING: &str = "missing access token";
 const TOKEN_MISMATCH: &str = "refresh token is not match";
 const TOKEN_UNVERIFIED: &str = "token unverified";
 
@@ -86,7 +85,7 @@ impl AuthService for AuthServer {
         -> Result<Response<UserKeyResponse>, Status>
     {
         let request = request.into_inner();
-        let result = self.auth_db.read_user_by_name(&request.name).await;
+        let result = self.auth_db.read_user_by_name(&request.username).await;
         let public_key = match result {
             Ok(value) => value.public_key,
             Err(_) => return Err(Status::not_found(USERNAME_NOT_FOUND))
@@ -102,8 +101,8 @@ impl AuthService for AuthServer {
                 std::net::IpAddr::V6(v) => v.octets().to_vec()
             }).unwrap_or(Vec::new());
         let request = request.into_inner();
-        let result = self.auth_db.read_user_by_name(&request.name).await;
-        let (refresh_token, access_tokens) = match result {
+        let result = self.auth_db.read_user_by_name(&request.username).await;
+        let (auth_token, access_tokens) = match result {
             Ok(value) => {
                 // decrypt encrypted password hash and return error if password is not verified
                 let priv_der = value.private_key.clone();
@@ -127,24 +126,33 @@ impl AuthService for AuthServer {
                 // get minimum refresh duration of roles associated with the user and calculate refresh expire
                 let duration = value.roles.iter().map(|e| e.refresh_duration).min().unwrap_or_default();
                 let expire = Utc::now() + Duration::seconds(duration as i64);
-                let (access_id, refresh_id) = self.auth_db.create_access_token(value.id, expire, &remote_ip)
+                let mut iter_tokens = self.auth_db
+                    .create_auth_token(value.id, expire, &remote_ip, value.roles.len() as u32)
                     .await
-                    .map_err(|_| Status::internal(CREATE_TOKEN_ERR))?;
-                let tokens: Vec<AccessTokenMap> = value.roles.iter().map(|e| AccessTokenMap {
-                    api_id: e.api_id,
-                    access_token: token::generate_token(access_id, &e.role, e.access_duration, &e.access_key)
-                        .unwrap_or(String::new())
+                    .map_err(|_| Status::internal(CREATE_TOKEN_ERR))?
+                    .into_iter();
+                let mut auth_token = String::new();
+                // generate access tokens using data from user role and generated access id
+                let tokens: Vec<AccessTokenMap> = value.roles.iter().map(|e| {
+                    let gen = iter_tokens.next().unwrap_or_default();
+                    auth_token = gen.2;
+                    AccessTokenMap {
+                        api_id: e.api_id,
+                        access_token: token::generate_token(gen.0, &e.role, e.access_duration, &e.access_key)
+                            .unwrap_or(String::new()),
+                        refresh_token: gen.1
+                    }
                 })
                 .filter(|e| e.access_token != String::new())
                 .collect();
                 if value.roles.len() != tokens.len() {
                     return Err(Status::internal(GENERATE_TOKEN_ERR));
                 }
-                (refresh_id, tokens)
+                (auth_token, tokens)
             },
             Err(_) => return Err(Status::not_found(USERNAME_NOT_FOUND))
         };
-        Ok(Response::new(UserLoginResponse { refresh_token, access_tokens }))
+        Ok(Response::new(UserLoginResponse { auth_token, access_tokens }))
     }
 
     async fn user_refresh(&self, request: Request<UserRefreshRequest>)
@@ -155,15 +163,12 @@ impl AuthService for AuthServer {
                 std::net::IpAddr::V6(v) => v.octets().to_vec()
             }).unwrap_or(Vec::new());
         let request = request.into_inner();
-        let (api_id, token) = request.access_token
-            .map(|s| (s.api_id, s.access_token))
-            .ok_or(Status::invalid_argument(TOKEN_MISSING))?;
-        let result = self.auth_db.read_api(api_id).await;
+        let result = self.auth_db.read_api(request.api_id).await;
         let (access_key, token_claims) = match result {
             Ok(value) => {
                 // verify access token and get token claims
                 let access_key = value.access_key;
-                let token_claims = token::decode_token(&token, &access_key, false)
+                let token_claims = token::decode_token(&request.access_token, &access_key, false)
                     .map_err(|_| Status::internal(TOKEN_UNVERIFIED))?;
                 (access_key, token_claims)
             },
@@ -179,21 +184,20 @@ impl AuthService for AuthServer {
                     value.ip == remote_ip
                 };
                 // update token in database and generate new access token if refresh token match
-                if value.refresh_id == request.refresh_token && ip_match {
-                    let refresh_id = self.auth_db
+                if value.refresh_token == request.refresh_token && ip_match {
+                    let (refresh_token, _) = self.auth_db
                         .update_access_token(token_claims.jti, Some(value.expire), None).await
                         .map_err(|_| Status::internal(UPDATE_TOKEN_ERR))?;
                     let duration = (token_claims.exp - token_claims.iat) as u32;
                     let access_token = token::generate_token(token_claims.jti, &token_claims.sub, duration, &access_key)
                         .map_err(|_| Status::internal(GENERATE_TOKEN_ERR))?;
-                    (refresh_id, access_token)
+                    (refresh_token, access_token)
                 } else {
                     return Err(Status::invalid_argument(TOKEN_MISMATCH))
                 }
             },
             Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
         };
-        let access_token = Some(AccessTokenMap { api_id, access_token });
         Ok(Response::new(UserRefreshResponse { refresh_token, access_token }))
     }
 
@@ -202,11 +206,15 @@ impl AuthService for AuthServer {
     {
         let request = request.into_inner();
         // delete token in database
-        let result = self.auth_db.read_refresh_token(&request.refresh_token).await;
+        let result = self.auth_db.list_auth_token(&request.auth_token).await;
         match result {
-            Ok(_) => {
-                self.auth_db.delete_refresh_token(&request.refresh_token).await
-                    .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
+            Ok(value) => {
+                if value.len() > 0 {
+                    self.auth_db.delete_auth_token(&request.auth_token).await
+                        .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
+                } else {
+                    return Err(Status::not_found(TOKEN_NOT_FOUND))
+                }
             },
             Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
         }

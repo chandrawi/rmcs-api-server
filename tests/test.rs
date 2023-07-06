@@ -18,7 +18,7 @@ mod tests {
 
         let username = "administrator";
         let request = Request::new(UserKeyRequest {
-            name: username.to_owned()
+            username: username.to_owned()
         });
         let response = auth.user_login_key(request).await.unwrap().into_inner();
         let pub_key = import_public_key(&response.public_key).unwrap();
@@ -26,27 +26,26 @@ mod tests {
         let password = "Adm1n_P4s5w0rd";
         let password_hash = encrypt_message(password.as_bytes(), pub_key).unwrap();
         let request = Request::new(UserLoginRequest {
-            name: username.to_owned(),
+            username: username.to_owned(),
             password: password_hash
         });
         let response = auth.user_login(request).await.unwrap().into_inner();
-        let refresh_token1 = response.refresh_token.clone();
+        // let auth_token1 = response.auth_token.clone();
         let access_token_map = response.access_tokens.into_iter().next().unwrap();
-        let (api_id1, access_token1) = (access_token_map.api_id, access_token_map.access_token.clone());
+        let access_token1 = access_token_map.access_token;
+        let refresh_token1 = access_token_map.refresh_token;
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         let request = Request::new(UserRefreshRequest {
-            refresh_token: refresh_token1.clone(),
-            access_token: Some(access_token_map)
+            api_id: access_token_map.api_id,
+            refresh_token: access_token1.clone(),
+            access_token: refresh_token1.clone()
         });
         let response = auth.user_refresh(request).await.unwrap().into_inner();
         let refresh_token2 = response.refresh_token.clone();
-        let (api_id2, access_token2) = response.access_token
-            .map(|s| (s.api_id, s.access_token))
-            .unwrap();
+        let access_token2 = response.access_token.clone();
 
-        assert_eq!(api_id1, api_id2);
         assert_ne!(access_token1, access_token2);
         assert_ne!(refresh_token1, refresh_token2);
 
