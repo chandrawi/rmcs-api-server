@@ -458,15 +458,7 @@ impl AccessValidator for GroupServer {
             CREATE_GROUP_GATEWAY, UPDATE_GROUP_GATEWAY, DELETE_GROUP_GATEWAY, ADD_GROUP_GATEWAY_MEMBER, REMOVE_GROUP_GATEWAY_MEMBER
         ];
         self.token_key = token_key.to_owned();
-        self.accesses = PROCEDURES.into_iter().map(|&s| AccessSchema {
-            procedure: s.to_owned(),
-            roles: accesses.iter()
-                .filter(|&a| a.procedure == s)
-                .map(|a| a.roles.clone())
-                .next()
-                .unwrap_or_default()
-        })
-        .collect();
+        self.accesses = Self::construct_accesses(accesses, PROCEDURES);
         self
     }
 

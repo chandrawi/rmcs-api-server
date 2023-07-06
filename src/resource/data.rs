@@ -386,15 +386,7 @@ impl AccessValidator for DataServer {
             CREATE_DATA, CREATE_DATA_WITH_MODEL, DELETE_DATA, DELETE_DATA_WITH_MODEL
         ];
         self.token_key = token_key.to_owned();
-        self.accesses = PROCEDURES.into_iter().map(|&s| AccessSchema {
-            procedure: s.to_owned(),
-            roles: accesses.iter()
-                .filter(|&a| a.procedure == s)
-                .map(|a| a.roles.clone())
-                .next()
-                .unwrap_or_default()
-        })
-        .collect();
+        self.accesses = Self::construct_accesses(accesses, PROCEDURES);
         self
     }
 

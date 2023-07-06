@@ -270,15 +270,7 @@ impl AccessValidator for ModelServer {
             READ_MODEL_CONFIG, LIST_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
         ];
         self.token_key = token_key.to_owned();
-        self.accesses = PROCEDURES.into_iter().map(|&s| AccessSchema {
-            procedure: s.to_owned(),
-            roles: accesses.iter()
-                .filter(|&a| a.procedure == s)
-                .map(|a| a.roles.clone())
-                .next()
-                .unwrap_or_default()
-        })
-        .collect();
+        self.accesses = Self::construct_accesses(accesses, PROCEDURES);
         self
     }
 

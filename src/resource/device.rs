@@ -588,15 +588,7 @@ impl AccessValidator for DeviceServer {
             READ_TYPE, LIST_TYPE_BY_NAME, CREATE_TYPE, UPDATE_TYPE, DELETE_TYPE, ADD_TYPE_MODEL, REMOVE_TYPE_MODEL
         ];
         self.token_key = token_key.to_owned();
-        self.accesses = PROCEDURES.into_iter().map(|&s| AccessSchema {
-            procedure: s.to_owned(),
-            roles: accesses.iter()
-                .filter(|&a| a.procedure == s)
-                .map(|a| a.roles.clone())
-                .next()
-                .unwrap_or_default()
-        })
-        .collect();
+        self.accesses = Self::construct_accesses(accesses, PROCEDURES);
         self
     }
 
