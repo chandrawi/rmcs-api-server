@@ -93,7 +93,7 @@ impl AuthService for AuthServer {
             }).unwrap_or(Vec::new());
         let request = request.into_inner();
         let result = self.auth_db.read_user_by_name(&request.username).await;
-        let (auth_token, access_tokens) = match result {
+        let (user_id, auth_token, access_tokens) = match result {
             Ok(value) => {
                 // decrypt encrypted password hash and return error if password is not verified
                 let priv_der = value.private_key.clone();
@@ -139,11 +139,11 @@ impl AuthService for AuthServer {
                 if value.roles.len() != tokens.len() {
                     return Err(Status::internal(GENERATE_TOKEN_ERR));
                 }
-                (auth_token, tokens)
+                (value.id, auth_token, tokens)
             },
             Err(_) => return Err(Status::not_found(USERNAME_NOT_FOUND))
         };
-        Ok(Response::new(UserLoginResponse { auth_token, access_tokens }))
+        Ok(Response::new(UserLoginResponse { user_id, auth_token, access_tokens }))
     }
 
     async fn user_refresh(&self, request: Request<UserRefreshRequest>)
@@ -196,18 +196,22 @@ impl AuthService for AuthServer {
         -> Result<Response<UserLogoutResponse>, Status>
     {
         let request = request.into_inner();
-        // delete token in database
+        // delete all tokens in database associated with input auth token and user id
         let result = self.auth_db.list_auth_token(&request.auth_token).await;
-        match result {
-            Ok(value) => {
-                if value.len() > 0 {
+        let results = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
+        };
+        match results.into_iter().next() {
+            Some(value) => {
+                if value.user_id == request.user_id {
                     self.auth_db.delete_auth_token(&request.auth_token).await
                         .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
                 } else {
-                    return Err(Status::not_found(TOKEN_NOT_FOUND))
+                    return Err(Status::invalid_argument(TOKEN_MISMATCH));
                 }
             },
-            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
+            None => return Err(Status::not_found(TOKEN_NOT_FOUND))
         }
         Ok(Response::new(UserLogoutResponse { }))
     }

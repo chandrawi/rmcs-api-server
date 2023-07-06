@@ -39,5 +39,5 @@ const CREATE_TOKEN_ERR: &str = "error create token";
 const UPDATE_TOKEN_ERR: &str = "error update token";
 const DELETE_TOKEN_ERR: &str = "error delete token";
 const GENERATE_TOKEN_ERR: &str = "error generate token";
-const TOKEN_MISMATCH: &str = "refresh token is not match";
+const TOKEN_MISMATCH: &str = "token is not match";
 const TOKEN_UNVERIFIED: &str = "token unverified";
