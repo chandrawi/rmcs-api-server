@@ -1,4 +1,5 @@
 pub(crate) mod token;
+pub(crate) mod root;
 pub mod validator;
 
 use rsa::{RsaPrivateKey, Pkcs1v15Encrypt, RsaPublicKey};

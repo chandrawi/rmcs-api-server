@@ -8,11 +8,11 @@ use rmcs_auth_api::auth::{
     UserRefreshRequest, UserRefreshResponse, UserLogoutRequest, UserLogoutResponse,
     ProcedureMap, AccessTokenMap
 };
-use crate::utility::{self, token};
+use crate::utility::{self, token, root::{root_data, ROOT_ID, ROOT_NAME}};
 use super::{
     API_ID_NOT_FOUND, USERNAME_NOT_FOUND, KEY_IMPORT_ERR, DECRYPT_ERR, ENCRYPT_ERR, PASSWORD_MISMATCH,
     TOKEN_NOT_FOUND, CREATE_TOKEN_ERR, UPDATE_TOKEN_ERR, DELETE_TOKEN_ERR,
-    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED
+    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED, ROOT_DEF_NOT_FOUND
 };
 
 pub struct AuthServer {
@@ -117,6 +117,7 @@ impl AuthService for AuthServer {
                 // get minimum refresh duration of roles associated with the user and calculate refresh expire
                 let duration = value.roles.iter().map(|e| e.refresh_duration).min().unwrap_or_default();
                 let expire = Utc::now() + Duration::seconds(duration as i64);
+                // insert new tokens as a number of user role and get generated access id, refresh token, and auth token
                 let mut iter_tokens = self.auth_db
                     .create_auth_token(value.id, expire, &remote_ip, value.roles.len() as u32)
                     .await
@@ -144,6 +145,51 @@ impl AuthService for AuthServer {
             Err(_) => return Err(Status::not_found(USERNAME_NOT_FOUND))
         };
         Ok(Response::new(UserLoginResponse { user_id, auth_token, access_tokens }))
+    }
+
+    async fn root_login(&self, request: Request<UserLoginRequest>)
+        -> Result<Response<UserLoginResponse>, Status>
+    {
+        let remote_ip = request.remote_addr().map(|s| match s.ip() {
+                std::net::IpAddr::V4(v) => v.octets().to_vec(),
+                std::net::IpAddr::V6(v) => v.octets().to_vec()
+            }).unwrap_or(Vec::new());
+        let request = request.into_inner();
+        if &request.username != ROOT_NAME {
+            return Err(Status::not_found(USERNAME_NOT_FOUND))
+        }
+        let (auth_token, access_tokens) = match root_data() {
+            Some(root) => {
+                // return error if password is not equal, add delay to overcome brute force attack
+                if root.password.into_bytes() != request.password {
+                    return Err(Status::invalid_argument(PASSWORD_MISMATCH))
+                }
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                // delete all previous root login token
+                self.auth_db.delete_token_by_user(ROOT_ID).await
+                    .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
+                // calculate refresh expire
+                let expire = Utc::now() + Duration::seconds(root.refresh_duration as i64);
+                // insert a new token and get generated access id, refresh token, and auth token
+                let gen = self.auth_db
+                    .create_auth_token(ROOT_ID, expire, &remote_ip, 1)
+                    .await
+                    .map_err(|_| Status::internal(CREATE_TOKEN_ERR))?
+                    .into_iter()
+                    .next()
+                    .ok_or(Status::internal(CREATE_TOKEN_ERR))?;
+                // generate access tokens using data from root data and generated access id
+                let access_token = AccessTokenMap {
+                    api_id: 0,
+                    access_token: token::generate_token(gen.0, ROOT_NAME, root.access_duration, &root.access_key)
+                        .map_err(|_| Status::internal(GENERATE_TOKEN_ERR))?,
+                    refresh_token: gen.1
+                };
+                (gen.2, vec![access_token])
+            },
+            None => return Err(Status::internal(ROOT_DEF_NOT_FOUND))
+        };
+        Ok(Response::new(UserLoginResponse { user_id: ROOT_ID, auth_token, access_tokens }))
     }
 
     async fn user_refresh(&self, request: Request<UserRefreshRequest>)

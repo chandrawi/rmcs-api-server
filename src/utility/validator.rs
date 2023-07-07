@@ -2,6 +2,7 @@ use tonic::{Status, Extensions};
 use jsonwebtoken::{decode, DecodingKey, Algorithm, Validation};
 use async_trait::async_trait;
 use super::token::TokenClaims;
+use super::root::{root_data, ROOT_ID, ROOT_NAME};
 use rmcs_auth_db::Auth;
 
 const EXT_NOT_FOUND: &str = "Extension not found";
@@ -9,6 +10,7 @@ const TOKEN_EXPIRED: &str = "Token is broken or expired";
 const PROC_NOT_FOUND: &str = "Procedure access not found";
 const USER_UNREGISTERED: &str = "user has not registered";
 const ACCESS_RIGHT_ERR: &str = "doesn't has access rights";
+const ROOT_DATA_ERR: &str = "root data error";
 
 #[derive(Debug, Clone)]
 pub struct AccessSchema {
@@ -43,14 +45,26 @@ pub trait AccessValidator {
         if self.accesses().len() == 0 {
             return Ok(());
         }
-        // decode token from request extension and get token claims
+        // decode token from request extension using api accees key or root key and get token claims
         let token = extension.get::<String>()
             .ok_or(Status::unauthenticated(EXT_NOT_FOUND))?;
         let decoding_key = DecodingKey::from_secret(self.token_key().as_slice());
         let validation = Validation::new(Algorithm::HS256);
-        let claims = decode::<TokenClaims>(token, &decoding_key, &validation)
-            .map_err(|_| Status::unauthenticated(TOKEN_EXPIRED))?
-            .claims;
+        let decoded = decode::<TokenClaims>(token, &decoding_key, &validation);
+        let claims = match decoded {
+            Ok(value) => value.claims,
+            Err(_) => {
+                let root = root_data().ok_or(Status::unauthenticated(ROOT_DATA_ERR))?;
+                let decoding_key = DecodingKey::from_secret(&root.access_key);
+                decode::<TokenClaims>(token, &decoding_key, &validation)
+                    .map_err(|_| Status::unauthenticated(TOKEN_EXPIRED))?
+                    .claims
+            }
+        };
+        // pass checking for root role
+        if &claims.sub == ROOT_NAME {
+            return Ok(())
+        }
         // check if the role in token claims has accsess rights to the procedure
         let access = self.accesses()
             .into_iter()
@@ -102,13 +116,13 @@ pub trait AuthValidator {
             },
             Err(_) => return Err(Status::unauthenticated(USER_UNREGISTERED))
         };
-        // check input user id or root user (user_id = 0)
+        // check input user id or root user
         if let ValidatorKind::User(id) = kind {
             if id == user_id {
                 return Ok(());
             }
         }
-        if user_id == 0 {
+        if user_id == ROOT_ID {
             Ok(())
         } else {
             Err(Status::unauthenticated(format!("User {} {}", user_id, ACCESS_RIGHT_ERR)))
