@@ -11,6 +11,14 @@ path = "src/auth_server.rs"
 name = "resource_server"
 path = "src/resource_server.rs"
 
+[[bin]]
+name = "test_auth_server"
+path = "src/test_auth_server.rs"
+
+[[bin]]
+name = "test_resource_server"
+path = "src/test_resource_server.rs"
+
 [dependencies]
 rmcs-auth-api = { path = "../rmcs-auth-api/rust" }
 rmcs-auth-db = { path = "../rmcs-auth-db" }
