@@ -10,6 +10,8 @@ use rmcs_api_server::auth::role::RoleServer;
 use rmcs_api_server::auth::user::UserServer;
 use rmcs_api_server::auth::token::TokenServer;
 use rmcs_api_server::auth::auth::AuthServer;
+use rmcs_api_server::utility::interceptor;
+use rmcs_api_server::utility::validator::AuthValidator;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -18,10 +20,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = std::env::var("ADDRESS_AUTH").unwrap().parse()?;
 
     let auth_db = Auth::new_with_url(&url).await;
-    let api_server = ApiServer::new(auth_db.clone());
-    let role_server = RoleServer::new(auth_db.clone());
-    let user_server = UserServer::new(auth_db.clone());
-    let token_server = TokenServer::new(auth_db.clone());
+    let api_server = ApiServer::new(auth_db.clone()).with_validator();
+    let role_server = RoleServer::new(auth_db.clone()).with_validator();
+    let user_server = UserServer::new(auth_db.clone()).with_validator();
+    let token_server = TokenServer::new(auth_db.clone()).with_validator();
     let auth_server = AuthServer::new(auth_db.clone());
 
     let reflection_service = tonic_reflection::server::Builder::configure()
@@ -33,10 +35,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     tonic::transport::Server::builder()
-        .add_service(ApiServiceServer::new(api_server))
-        .add_service(RoleServiceServer::new(role_server))
-        .add_service(UserServiceServer::new(user_server))
-        .add_service(TokenServiceServer::new(token_server))
+        .add_service(ApiServiceServer::with_interceptor(api_server, interceptor))
+        .add_service(RoleServiceServer::with_interceptor(role_server, interceptor))
+        .add_service(UserServiceServer::with_interceptor(user_server, interceptor))
+        .add_service(TokenServiceServer::with_interceptor(token_server, interceptor))
         .add_service(AuthServiceServer::new(auth_server))
         .add_service(reflection_service?)
         .serve(addr)

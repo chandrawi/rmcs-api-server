@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use super::token::TokenClaims;
 use super::root::{root_data, ROOT_ID, ROOT_NAME};
 use rmcs_auth_db::Auth;
+use rmcs_auth_api::auth::ProcedureMap;
 
 const EXT_NOT_FOUND: &str = "Extension not found";
 const TOKEN_EXPIRED: &str = "Token is broken or expired";
@@ -16,6 +17,12 @@ const ROOT_DATA_ERR: &str = "root data error";
 pub struct AccessSchema {
     pub procedure: String,
     pub roles: Vec<String>
+}
+
+impl From<ProcedureMap> for AccessSchema {
+    fn from(value: ProcedureMap) -> Self {
+        Self { procedure: value.procedure, roles: value.roles }
+    }
 }
 
 pub trait AccessValidator {
