@@ -36,7 +36,7 @@ impl AuthService for AuthServer {
         let request = request.into_inner();
         let result = self.auth_db.read_api(request.api_id).await;
         let public_key = match result {
-            Ok(value) => value.public_key,
+            Ok(api) => api.public_key,
             Err(_) => return Err(Status::not_found(API_ID_NOT_FOUND))
         };
         Ok(Response::new(ApiKeyResponse { public_key }))
@@ -48,10 +48,10 @@ impl AuthService for AuthServer {
         let request = request.into_inner();
         let result = self.auth_db.read_api(request.api_id).await;
         let (access_key, access_procedures) = match result {
-            Ok(value) => {
+            Ok(api) => {
                 // decrypt encrypted password hash and return error if password is not verified
-                let priv_der = value.private_key.clone();
-                let hash = value.password.clone();
+                let priv_der = api.private_key.clone();
+                let hash = api.password.clone();
                 let priv_key = utility::import_private_key(&priv_der)
                     .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
                 let password = utility::decrypt_message(&request.password, priv_key)
@@ -60,9 +60,9 @@ impl AuthService for AuthServer {
                     .map_err(|_| Status::invalid_argument(PASSWORD_MISMATCH))?;
                 let pub_key = utility::import_public_key(&request.public_key)
                     .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
-                let access_keys = utility::encrypt_message(&value.access_key, pub_key)
+                let access_keys = utility::encrypt_message(&api.access_key, pub_key)
                     .map_err(|_| Status::internal(ENCRYPT_ERR))?;
-                let procedures = value.procedures.into_iter()
+                let procedures = api.procedures.into_iter()
                     .map(|e| ProcedureMap { procedure: e.name, roles: e.roles })
                     .collect();
                 (access_keys, procedures)
@@ -76,10 +76,16 @@ impl AuthService for AuthServer {
         -> Result<Response<UserKeyResponse>, Status>
     {
         let request = request.into_inner();
-        let result = self.auth_db.read_user_by_name(&request.username).await;
+        let result = if &request.username == ROOT_NAME {
+            root_data().map(|r| r.into())
+                .ok_or(Status::not_found(ROOT_DEF_NOT_FOUND))
+        } else {
+            self.auth_db.read_user_by_name(&request.username).await
+                .map_err(|_| Status::not_found(USERNAME_NOT_FOUND))
+        };
         let public_key = match result {
-            Ok(value) => value.public_key,
-            Err(_) => return Err(Status::not_found(USERNAME_NOT_FOUND))
+            Ok(user) => user.public_key,
+            Err(e) => return Err(e)
         };
         Ok(Response::new(UserKeyResponse { public_key }))
     }
@@ -92,40 +98,55 @@ impl AuthService for AuthServer {
                 std::net::IpAddr::V6(v) => v.octets().to_vec()
             }).unwrap_or(Vec::new());
         let request = request.into_inner();
-        let result = self.auth_db.read_user_by_name(&request.username).await;
+        // Get user schema from root environment variables or database
+        let result = if &request.username == ROOT_NAME {
+            root_data().map(|r| r.into())
+                .ok_or(Status::not_found(ROOT_DEF_NOT_FOUND))
+        } else {
+            self.auth_db.read_user_by_name(&request.username).await
+                .map_err(|_| Status::not_found(USERNAME_NOT_FOUND))
+        };
         let (user_id, auth_token, access_tokens) = match result {
-            Ok(value) => {
+            Ok(user) => {
                 // decrypt encrypted password hash and return error if password is not verified
-                let priv_der = value.private_key.clone();
-                let hash = value.password.clone();
+                let priv_der = user.private_key.clone();
+                let hash = user.password.clone();
                 let priv_key = utility::import_private_key(&priv_der)
                     .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
                 let password = utility::decrypt_message(&request.password, priv_key)
                     .map_err(|_| Status::internal(DECRYPT_ERR))?;
-                utility::verify_password(&password, &hash)
-                    .map_err(|_| Status::invalid_argument(PASSWORD_MISMATCH))?;
+                if user.name == ROOT_NAME {
+                    // add delay to overcome brute force attack
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    if user.password.into_bytes() != password {
+                        return Err(Status::invalid_argument(PASSWORD_MISMATCH))
+                    }
+                } else {
+                    utility::verify_password(&password, &hash)
+                        .map_err(|_| Status::invalid_argument(PASSWORD_MISMATCH))?;
+                }
                 // delete all previous token if one of the roles marked as non multi device login
-                let multi = value.roles.iter().map(|e| e.multi).filter(|&e| !e).count();
+                let multi = user.roles.iter().map(|e| e.multi).filter(|&e| !e).count();
                 if multi > 0 {
-                    self.auth_db.delete_token_by_user(value.id).await
+                    self.auth_db.delete_token_by_user(user.id).await
                     .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
                 }
-                let ip_lock = value.roles.iter().map(|e| e.ip_lock).filter(|&e| e).count();
+                let ip_lock = user.roles.iter().map(|e| e.ip_lock).filter(|&e| e).count();
                 if ip_lock == 0 {
                     remote_ip = Vec::new();
                 }
                 // get minimum refresh duration of roles associated with the user and calculate refresh expire
-                let duration = value.roles.iter().map(|e| e.refresh_duration).min().unwrap_or_default();
+                let duration = user.roles.iter().map(|e| e.refresh_duration).min().unwrap_or_default();
                 let expire = Utc::now() + Duration::seconds(duration as i64);
                 // insert new tokens as a number of user role and get generated access id, refresh token, and auth token
                 let mut iter_tokens = self.auth_db
-                    .create_auth_token(value.id, expire, &remote_ip, value.roles.len() as u32)
+                    .create_auth_token(user.id, expire, &remote_ip, user.roles.len() as u32)
                     .await
                     .map_err(|_| Status::internal(CREATE_TOKEN_ERR))?
                     .into_iter();
                 let mut auth_token = String::new();
                 // generate access tokens using data from user role and generated access id
-                let tokens: Vec<AccessTokenMap> = value.roles.iter().map(|e| {
+                let tokens: Vec<AccessTokenMap> = user.roles.iter().map(|e| {
                     let gen = iter_tokens.next().unwrap_or_default();
                     auth_token = gen.2;
                     AccessTokenMap {
@@ -137,59 +158,14 @@ impl AuthService for AuthServer {
                 })
                 .filter(|e| e.access_token != String::new())
                 .collect();
-                if value.roles.len() != tokens.len() {
+                if user.roles.len() != tokens.len() {
                     return Err(Status::internal(GENERATE_TOKEN_ERR));
                 }
-                (value.id, auth_token, tokens)
+                (user.id, auth_token, tokens)
             },
-            Err(_) => return Err(Status::not_found(USERNAME_NOT_FOUND))
+            Err(e) => return Err(e)
         };
         Ok(Response::new(UserLoginResponse { user_id, auth_token, access_tokens }))
-    }
-
-    async fn root_login(&self, request: Request<UserLoginRequest>)
-        -> Result<Response<UserLoginResponse>, Status>
-    {
-        let remote_ip = request.remote_addr().map(|s| match s.ip() {
-                std::net::IpAddr::V4(v) => v.octets().to_vec(),
-                std::net::IpAddr::V6(v) => v.octets().to_vec()
-            }).unwrap_or(Vec::new());
-        let request = request.into_inner();
-        if &request.username != ROOT_NAME {
-            return Err(Status::not_found(USERNAME_NOT_FOUND))
-        }
-        let (auth_token, access_tokens) = match root_data() {
-            Some(root) => {
-                // return error if password is not equal, add delay to overcome brute force attack
-                if root.password.into_bytes() != request.password {
-                    return Err(Status::invalid_argument(PASSWORD_MISMATCH))
-                }
-                std::thread::sleep(std::time::Duration::from_millis(500));
-                // delete all previous root login token
-                self.auth_db.delete_token_by_user(ROOT_ID).await
-                    .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
-                // calculate refresh expire
-                let expire = Utc::now() + Duration::seconds(root.refresh_duration as i64);
-                // insert a new token and get generated access id, refresh token, and auth token
-                let gen = self.auth_db
-                    .create_auth_token(ROOT_ID, expire, &remote_ip, 1)
-                    .await
-                    .map_err(|_| Status::internal(CREATE_TOKEN_ERR))?
-                    .into_iter()
-                    .next()
-                    .ok_or(Status::internal(CREATE_TOKEN_ERR))?;
-                // generate access tokens using data from root data and generated access id
-                let access_token = AccessTokenMap {
-                    api_id: 0,
-                    access_token: token::generate_token(gen.0, ROOT_NAME, root.access_duration, &root.access_key)
-                        .map_err(|_| Status::internal(GENERATE_TOKEN_ERR))?,
-                    refresh_token: gen.1
-                };
-                (gen.2, vec![access_token])
-            },
-            None => return Err(Status::internal(ROOT_DEF_NOT_FOUND))
-        };
-        Ok(Response::new(UserLoginResponse { user_id: ROOT_ID, auth_token, access_tokens }))
     }
 
     async fn user_refresh(&self, request: Request<UserRefreshRequest>)
@@ -202,28 +178,35 @@ impl AuthService for AuthServer {
         let request = request.into_inner();
         let result = self.auth_db.read_api(request.api_id).await;
         let (access_key, token_claims) = match result {
-            Ok(value) => {
+            Ok(api) => {
                 // verify access token and get token claims
-                let access_key = value.access_key;
-                let token_claims = token::decode_token(&request.access_token, &access_key, false)
+                let token_claims = token::decode_token(&request.access_token, &api.access_key, false)
                     .map_err(|_| Status::internal(TOKEN_UNVERIFIED))?;
-                (access_key, token_claims)
+                (api.access_key, token_claims)
             },
-            Err(_) => return Err(Status::not_found(API_ID_NOT_FOUND))
+            Err(_) => {
+                if request.api_id != ROOT_ID {
+                    return Err(Status::not_found(API_ID_NOT_FOUND));
+                }
+                let root = root_data().ok_or(Status::not_found(API_ID_NOT_FOUND))?;
+                let token_claims = token::decode_token(&request.access_token, &root.access_key, false)
+                    .map_err(|_| Status::internal("TOKEN_UNVERIFIED root"))?;
+                (root.access_key, token_claims)
+            }
         };
         let result = self.auth_db.read_access_token(token_claims.jti).await;
         let (refresh_token, access_token) = match result {
-            Ok(value) => {
+            Ok(token) => {
                 // check if remote ip match with stored login ip
-                let ip_match = if value.ip == Vec::<u8>::new() {
+                let ip_match = if token.ip == Vec::<u8>::new() {
                     true
                 } else {
-                    value.ip == remote_ip
+                    token.ip == remote_ip
                 };
                 // update token in database and generate new access token if refresh token match
-                if value.refresh_token == request.refresh_token && ip_match {
+                if token.refresh_token == request.refresh_token && ip_match {
                     let (refresh_token, _) = self.auth_db
-                        .update_access_token(token_claims.jti, Some(value.expire), None).await
+                        .update_access_token(token_claims.jti, Some(token.expire), None).await
                         .map_err(|_| Status::internal(UPDATE_TOKEN_ERR))?;
                     let duration = (token_claims.exp - token_claims.iat) as u32;
                     let access_token = token::generate_token(token_claims.jti, &token_claims.sub, duration, &access_key)
@@ -244,13 +227,13 @@ impl AuthService for AuthServer {
         let request = request.into_inner();
         // delete all tokens in database associated with input auth token and user id
         let result = self.auth_db.list_auth_token(&request.auth_token).await;
-        let results = match result {
-            Ok(value) => value,
+        let tokens = match result {
+            Ok(tokens) => tokens,
             Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
         };
-        match results.into_iter().next() {
-            Some(value) => {
-                if value.user_id == request.user_id {
+        match tokens.into_iter().next() {
+            Some(token) => {
+                if token.user_id == request.user_id {
                     self.auth_db.delete_auth_token(&request.auth_token).await
                         .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
                 } else {

@@ -1,2 +1,8 @@
 /target
 .env
+!example.env
+*.pem
+*.key
+*.csr
+*.crt
+*.ext
