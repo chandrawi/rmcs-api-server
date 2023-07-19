@@ -18,7 +18,7 @@ use rmcs_api_server::resource::log::LogServer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let url = std::env::var("DATABASE_RESOURCE_URL").unwrap();
+    let url = std::env::var("DATABASE_RESOURCE_TEST_URL").unwrap();
     let addr = std::env::var("ADDRESS_RESOURCE").unwrap().parse()?;
 
     let resource_db = Resource::new_with_url(&url).await;

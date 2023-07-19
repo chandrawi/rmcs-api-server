@@ -6,14 +6,14 @@ use pkcs8::{DecodePrivateKey, EncodePrivateKey};
 use spki::{DecodePublicKey, EncodePublicKey};
 use rmcs_auth_db::schema::auth_user::{UserSchema, UserRoleSchema};
 
-pub(crate) const ROOT_ID: u32 = 0;
-pub(crate) const ROOT_NAME: &str = "root";
+pub const ROOT_ID: u32 = 0;
+pub const ROOT_NAME: &str = "root";
 
-pub(crate) struct RootData {
-    pub(crate) password: String,
-    pub(crate) access_duration: u32,
-    pub(crate) refresh_duration: u32,
-    pub(crate) access_key: Vec<u8>
+pub struct RootData {
+    pub password: String,
+    pub access_duration: u32,
+    pub refresh_duration: u32,
+    pub access_key: Vec<u8>
 }
 
 impl Into<UserSchema> for RootData {
@@ -39,7 +39,7 @@ impl Into<UserSchema> for RootData {
     }
 }
 
-pub(crate) fn root_data() -> Option<RootData>
+pub fn root_data() -> Option<RootData>
 {
     let root_env = PathBuf::from_iter([std::env!("CARGO_MANIFEST_DIR"), "root", ".env"]);
     dotenvy::from_path(root_env).ok()?;
@@ -55,7 +55,7 @@ pub(crate) fn root_data() -> Option<RootData>
     })
 }
 
-pub(crate) fn root_private_key() -> Option<Vec<u8>>
+pub fn root_private_key() -> Option<Vec<u8>>
 {
     let root_priv = PathBuf::from_iter([std::env!("CARGO_MANIFEST_DIR"), "root", "private.pem"]);
     let priv_pem = std::fs::read_to_string(root_priv).ok()?;

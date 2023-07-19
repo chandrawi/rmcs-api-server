@@ -14,7 +14,7 @@ use rmcs_api_server::auth::auth::AuthServer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let url = std::env::var("DATABASE_AUTH_URL").unwrap();
+    let url = std::env::var("DATABASE_AUTH_TEST_URL").unwrap();
     let addr = std::env::var("ADDRESS_AUTH").unwrap().parse()?;
 
     let auth_db = Auth::new_with_url(&url).await;
