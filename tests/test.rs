@@ -150,7 +150,7 @@ mod tests {
         }
     }
 
-    async fn login(address: &str, username: &str, password: &str) -> (u32, String, String, String) {
+    async fn login(address: &str, username: &str, password: &str) -> (i32, String, String, String) {
         let channel = Channel::from_shared(address.to_owned()).unwrap().connect().await.unwrap();
         let mut client = AuthServiceClient::new(channel);
         let request = Request::new(UserKeyRequest {
@@ -171,7 +171,7 @@ mod tests {
         (response.user_id, response.auth_token, access_token, refresh_token)
     }
 
-    async fn logout(address: &str, user_id: u32, auth_token: &str) {
+    async fn logout(address: &str, user_id: i32, auth_token: &str) {
         let channel = Channel::from_shared(address.to_owned()).unwrap().connect().await.unwrap();
         let mut client = AuthServiceClient::new(channel);
         let request = Request::new(UserLogoutRequest {

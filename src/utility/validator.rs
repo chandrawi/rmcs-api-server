@@ -93,7 +93,7 @@ pub trait AccessValidator {
 }
 
 pub enum ValidatorKind {
-    User(u32),
+    User(i32),
     Root
 }
 

@@ -129,7 +129,7 @@ impl BufferService for BufferServer {
             request.device_id,
             request.model_id,
             Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as u16),
+            Some(request.index as i16),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {

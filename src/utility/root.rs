@@ -6,13 +6,13 @@ use pkcs8::{DecodePrivateKey, EncodePrivateKey};
 use spki::{DecodePublicKey, EncodePublicKey};
 use rmcs_auth_db::schema::auth_user::{UserSchema, UserRoleSchema};
 
-pub const ROOT_ID: u32 = 0;
+pub const ROOT_ID: i32 = 0;
 pub const ROOT_NAME: &str = "root";
 
 pub struct RootData {
     pub password: String,
-    pub access_duration: u32,
-    pub refresh_duration: u32,
+    pub access_duration: i32,
+    pub refresh_duration: i32,
     pub access_key: Vec<u8>
 }
 

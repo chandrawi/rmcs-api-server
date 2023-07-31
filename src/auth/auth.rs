@@ -208,7 +208,7 @@ impl AuthService for AuthServer {
                     let (refresh_token, _) = self.auth_db
                         .update_access_token(token_claims.jti, Some(token.expire), None).await
                         .map_err(|_| Status::internal(UPDATE_TOKEN_ERR))?;
-                    let duration = (token_claims.exp - token_claims.iat) as u32;
+                    let duration = (token_claims.exp - token_claims.iat) as i32;
                     let access_token = token::generate_token(token_claims.jti, &token_claims.sub, duration, &access_key)
                         .map_err(|_| Status::internal(GENERATE_TOKEN_ERR))?;
                     (refresh_token, access_token)

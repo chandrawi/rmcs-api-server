@@ -113,8 +113,8 @@ impl SliceService for SliceServer {
             request.model_id,
             Utc.timestamp_nanos(request.timestamp_begin),
             Utc.timestamp_nanos(request.timestamp_end),
-            Some(request.index_begin as u16),
-            Some(request.index_end as u16),
+            Some(request.index_begin as i16),
+            Some(request.index_end as i16),
             &request.name,
             Some(&request.description)
         ).await;
@@ -134,8 +134,8 @@ impl SliceService for SliceServer {
             request.id,
             request.timestamp_begin.map(|s| Utc.timestamp_nanos(s)),
             request.timestamp_end.map(|s| Utc.timestamp_nanos(s)),
-            request.index_begin.map(|s| s as u16),
-            request.index_end.map(|s| s as u16),
+            request.index_begin.map(|s| s as i16),
+            request.index_end.map(|s| s as i16),
             request.name.as_deref(),
             request.description.as_deref()
         ).await;

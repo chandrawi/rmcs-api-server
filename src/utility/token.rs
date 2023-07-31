@@ -4,13 +4,13 @@ use jsonwebtoken::{encode, decode, DecodingKey, EncodingKey, Header, Algorithm, 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
-    pub jti: u32,
+    pub jti: i32,
     pub sub: String,
     pub iat: u64,
     pub exp: u64,
 }
 
-pub(crate) fn generate_token(jti: u32, sub: &str, duration: u32, key: &[u8]) -> Result<String, jsonwebtoken::errors::Error>
+pub(crate) fn generate_token(jti: i32, sub: &str, duration: i32, key: &[u8]) -> Result<String, jsonwebtoken::errors::Error>
 {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     let iat = now.as_secs();

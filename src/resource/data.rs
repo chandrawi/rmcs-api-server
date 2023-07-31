@@ -49,7 +49,7 @@ impl DataService for DataServer {
             request.device_id,
             request.model_id,
             Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as u16)
+            Some(request.index as i16)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -171,7 +171,7 @@ impl DataService for DataServer {
             request.model.unwrap().into(),
             request.device_id,
             Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as u16)
+            Some(request.index as i16)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -292,7 +292,7 @@ impl DataService for DataServer {
             request.device_id,
             request.model_id,
             Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as u16),
+            Some(request.index as i16),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
@@ -319,7 +319,7 @@ impl DataService for DataServer {
             request.model.unwrap().into(),
             request.device_id,
             Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as u16),
+            Some(request.index as i16),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
@@ -343,7 +343,7 @@ impl DataService for DataServer {
             request.device_id,
             request.model_id,
             Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as u16)
+            Some(request.index as i16)
         ).await;
         match result {
             Ok(_) => (),
@@ -364,7 +364,7 @@ impl DataService for DataServer {
             request.model.unwrap().into(),
             request.device_id,
             Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as u16)
+            Some(request.index as i16)
         ).await;
         match result {
             Ok(_) => (),
