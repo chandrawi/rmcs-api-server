@@ -1,5 +1,5 @@
 use tonic::{Request, Response, Status};
-use chrono::{Utc, TimeZone};
+use chrono::NaiveDateTime;
 use rmcs_resource_db::{Resource, LogType, LogValue};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::common;
@@ -43,7 +43,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.read_log(
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.device_id
         ).await;
         let result = match result {
@@ -59,7 +59,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), LIST_LOG_BY_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_time(
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.device_id,
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
@@ -76,7 +76,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), LIST_LOG_BY_LAST_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_last_time(
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.device_id,
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
@@ -93,8 +93,8 @@ impl LogService for LogServer {
         self.validate(request.extensions(), LIST_LOG_BY_RANGE_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_range_time(
-            Utc.timestamp_nanos(request.begin),
-            Utc.timestamp_nanos(request.end),
+            NaiveDateTime::from_timestamp_micros(request.begin).unwrap_or_default(),
+            NaiveDateTime::from_timestamp_micros(request.end).unwrap_or_default(),
             request.device_id,
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
@@ -111,7 +111,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), CREATE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_log(
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.device_id,
             LogStatus::from_i32(request.status).unwrap_or_default().as_str_name(),
             LogValue::from_bytes(
@@ -132,7 +132,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), UPDATE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.update_log(
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.device_id,
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name()),
             request.log_bytes.map(|s| {
@@ -155,7 +155,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), DELETE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_log(
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.device_id
         ).await;
         match result {

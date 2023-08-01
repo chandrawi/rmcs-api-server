@@ -137,7 +137,7 @@ impl AuthService for AuthServer {
                 }
                 // get minimum refresh duration of roles associated with the user and calculate refresh expire
                 let duration = user.roles.iter().map(|e| e.refresh_duration).min().unwrap_or_default();
-                let expire = Utc::now() + Duration::seconds(duration as i64);
+                let expire = Utc::now().naive_utc() + Duration::seconds(duration as i64);
                 // insert new tokens as a number of user role and get generated access id, refresh token, and auth token
                 let mut iter_tokens = self.auth_db
                     .create_auth_token(user.id, expire, &remote_ip, user.roles.len() as u32)

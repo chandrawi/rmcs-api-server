@@ -1,5 +1,5 @@
 use tonic::{Request, Response, Status};
-use chrono::{Utc, TimeZone};
+use chrono::NaiveDateTime;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::token::token_service_server::TokenService;
 use rmcs_auth_api::token::{
@@ -76,7 +76,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.create_access_token(
             request.user_id,
             &request.auth_token,
-            Utc.timestamp_nanos(request.expire),
+            NaiveDateTime::from_timestamp_micros(request.expire).unwrap_or_default(),
             request.ip.as_slice()
         ).await;
         let (access_id, refresh_token, auth_token) = match result {
@@ -93,7 +93,7 @@ impl TokenService for TokenServer {
         let request = request.into_inner();
         let result = self.auth_db.create_auth_token(
             request.user_id,
-            Utc.timestamp_nanos(request.expire),
+            NaiveDateTime::from_timestamp_micros(request.expire).unwrap_or_default(),
             request.ip.as_slice(),
             request.number
         ).await;
@@ -116,7 +116,7 @@ impl TokenService for TokenServer {
         let request = request.into_inner();
         let result = self.auth_db.update_access_token(
             request.access_id.unwrap_or_default(),
-            request.expire.map(|s| Utc.timestamp_nanos(s)),
+            request.expire.map(|s| NaiveDateTime::from_timestamp_micros(s).unwrap_or_default()),
             request.ip.as_deref()
         ).await;
         let (refresh_token, auth_token) = match result {
@@ -133,7 +133,7 @@ impl TokenService for TokenServer {
         let request = request.into_inner();
         let result = self.auth_db.update_auth_token(
             request.auth_token.unwrap_or_default().as_ref(),
-            request.expire.map(|s| Utc.timestamp_nanos(s)),
+            request.expire.map(|s| NaiveDateTime::from_timestamp_micros(s).unwrap_or_default()),
             request.ip.as_deref()
         ).await;
         let (refresh_token, auth_token) = match result {

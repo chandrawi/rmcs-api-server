@@ -1,5 +1,5 @@
 use tonic::{Request, Response, Status};
-use chrono::{Utc, TimeZone};
+use chrono::NaiveDateTime;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::common;
@@ -48,8 +48,8 @@ impl DataService for DataServer {
         let result = self.resource_db.read_data(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as i16)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
+            Some(request.index)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -66,7 +66,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_by_time(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -83,7 +83,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_by_last_time(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -100,8 +100,8 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_by_range_time(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.begin),
-            Utc.timestamp_nanos(request.end)
+            NaiveDateTime::from_timestamp_micros(request.begin).unwrap_or_default(),
+            NaiveDateTime::from_timestamp_micros(request.end).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -118,7 +118,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_by_number_before(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
         let results = match result {
@@ -136,7 +136,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_by_number_after(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
         let results = match result {
@@ -170,8 +170,8 @@ impl DataService for DataServer {
         let result = self.resource_db.read_data_with_model(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as i16)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
+            Some(request.index)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -191,7 +191,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_with_model_by_time(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.timestamp)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -211,7 +211,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_with_model_by_last_time(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.timestamp)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -231,8 +231,8 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_with_model_by_range_time(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.begin),
-            Utc.timestamp_nanos(request.end)
+            NaiveDateTime::from_timestamp_micros(request.begin).unwrap_or_default(),
+            NaiveDateTime::from_timestamp_micros(request.end).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -252,7 +252,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_with_model_by_number_before(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
         let results = match result {
@@ -273,7 +273,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_with_model_by_number_after(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.timestamp),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
         let results = match result {
@@ -291,8 +291,8 @@ impl DataService for DataServer {
         let result = self.resource_db.create_data(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as i16),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
+            Some(request.index),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
@@ -318,8 +318,8 @@ impl DataService for DataServer {
         let result = self.resource_db.create_data_with_model(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as i16),
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
+            Some(request.index),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
@@ -342,8 +342,8 @@ impl DataService for DataServer {
         let result = self.resource_db.delete_data(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as i16)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
+            Some(request.index)
         ).await;
         match result {
             Ok(_) => (),
@@ -363,8 +363,8 @@ impl DataService for DataServer {
         let result = self.resource_db.delete_data_with_model(
             request.model.unwrap().into(),
             request.device_id,
-            Utc.timestamp_nanos(request.timestamp),
-            Some(request.index as i16)
+            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
+            Some(request.index)
         ).await;
         match result {
             Ok(_) => (),

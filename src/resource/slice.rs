@@ -1,5 +1,5 @@
 use tonic::{Request, Response, Status};
-use chrono::{Utc, TimeZone};
+use chrono::NaiveDateTime;
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::slice::slice_service_server::SliceService;
 use rmcs_resource_api::slice::{
@@ -111,10 +111,10 @@ impl SliceService for SliceServer {
         let result = self.resource_db.create_slice(
             request.device_id,
             request.model_id,
-            Utc.timestamp_nanos(request.timestamp_begin),
-            Utc.timestamp_nanos(request.timestamp_end),
-            Some(request.index_begin as i16),
-            Some(request.index_end as i16),
+            NaiveDateTime::from_timestamp_micros(request.timestamp_begin).unwrap_or_default(),
+            NaiveDateTime::from_timestamp_micros(request.timestamp_end).unwrap_or_default(),
+            Some(request.index_begin),
+            Some(request.index_end),
             &request.name,
             Some(&request.description)
         ).await;
@@ -132,10 +132,10 @@ impl SliceService for SliceServer {
         let request = request.into_inner();
         let result = self.resource_db.update_slice(
             request.id,
-            request.timestamp_begin.map(|s| Utc.timestamp_nanos(s)),
-            request.timestamp_end.map(|s| Utc.timestamp_nanos(s)),
-            request.index_begin.map(|s| s as i16),
-            request.index_end.map(|s| s as i16),
+            request.timestamp_begin.map(|s| NaiveDateTime::from_timestamp_micros(s).unwrap_or_default()),
+            request.timestamp_end.map(|s| NaiveDateTime::from_timestamp_micros(s).unwrap_or_default()),
+            request.index_begin.map(|s| s),
+            request.index_end.map(|s| s),
             request.name.as_deref(),
             request.description.as_deref()
         ).await;
