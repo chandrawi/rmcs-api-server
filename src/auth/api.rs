@@ -1,4 +1,5 @@
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::api::api_service_server::ApiService;
 use rmcs_auth_api::api::{
@@ -35,7 +36,7 @@ impl ApiService for ApiServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.read_api(request.id).await;
+        let result = self.auth_db.read_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(API_NOT_FOUND))
@@ -85,7 +86,7 @@ impl ApiService for ApiServer {
             Ok(value) => value,
             Err(_) => return Err(Status::internal(API_CREATE_ERR))
         };
-        Ok(Response::new(ApiCreateResponse { id }))
+        Ok(Response::new(ApiCreateResponse { id: id.as_bytes().to_vec() }))
     }
 
     async fn update_api(&self, request: Request<ApiUpdate>)
@@ -94,7 +95,7 @@ impl ApiService for ApiServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.update_api(
-            request.id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.name.as_deref(),
             request.address.as_deref(),
             request.category.as_deref(),
@@ -114,7 +115,7 @@ impl ApiService for ApiServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.delete_api(request.id).await;
+        let result = self.auth_db.delete_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(API_DELETE_ERR))
@@ -127,7 +128,7 @@ impl ApiService for ApiServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.read_procedure(request.id).await;
+        let result = self.auth_db.read_procedure(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
@@ -141,7 +142,7 @@ impl ApiService for ApiServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.read_procedure_by_name(
-            request.api_id,
+            Uuid::from_slice(&request.api_id).unwrap_or_default(),
             &request.name,
         ).await;
         let result = match result {
@@ -156,7 +157,7 @@ impl ApiService for ApiServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.list_procedure_by_api(request.id).await;
+        let result = self.auth_db.list_procedure_by_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
@@ -170,7 +171,7 @@ impl ApiService for ApiServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_procedure(
-            request.api_id,
+            Uuid::from_slice(&request.api_id).unwrap_or_default(),
             &request.name,
             &request.description
         ).await;
@@ -178,7 +179,7 @@ impl ApiService for ApiServer {
             Ok(value) => value,
             Err(_) => return Err(Status::internal(PROC_CREATE_ERR))
         };
-        Ok(Response::new(ProcedureCreateResponse { id }))
+        Ok(Response::new(ProcedureCreateResponse { id: id.as_bytes().to_vec() }))
     }
 
     async fn update_procedure(&self, request: Request<ProcedureUpdate>)
@@ -187,7 +188,7 @@ impl ApiService for ApiServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.update_procedure(
-            request.id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.name.as_deref(),
             request.description.as_deref()
         ).await;
@@ -203,7 +204,7 @@ impl ApiService for ApiServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.delete_procedure(request.id).await;
+        let result = self.auth_db.delete_procedure(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(PROC_DELETE_ERR))

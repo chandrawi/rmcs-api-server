@@ -1,4 +1,5 @@
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::role::role_service_server::RoleService;
 use rmcs_auth_api::role::{
@@ -32,7 +33,7 @@ impl RoleService for RoleServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.read_role(request.id).await;
+        let result = self.auth_db.read_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
@@ -46,7 +47,7 @@ impl RoleService for RoleServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.read_role_by_name(
-            request.api_id,
+            Uuid::from_slice(&request.api_id).unwrap_or_default(),
             &request.name
         ).await;
         let result = match result {
@@ -61,7 +62,7 @@ impl RoleService for RoleServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.list_role_by_api(request.api_id).await;
+        let result = self.auth_db.list_role_by_api(Uuid::from_slice(&request.api_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
@@ -74,7 +75,7 @@ impl RoleService for RoleServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.list_role_by_user(request.user_id).await;
+        let result = self.auth_db.list_role_by_user(Uuid::from_slice(&request.user_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
@@ -88,7 +89,7 @@ impl RoleService for RoleServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_role(
-            request.api_id,
+            Uuid::from_slice(&request.api_id).unwrap_or_default(),
             &request.name,
             request.multi,
             request.ip_lock,
@@ -99,7 +100,7 @@ impl RoleService for RoleServer {
             Ok(value) => value,
             Err(_) => return Err(Status::internal(ROLE_CREATE_ERR))
         };
-        Ok(Response::new(RoleCreateResponse { id }))
+        Ok(Response::new(RoleCreateResponse { id: id.as_bytes().to_vec() }))
     }
 
     async fn update_role(&self, request: Request<RoleUpdate>)
@@ -108,7 +109,7 @@ impl RoleService for RoleServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.update_role(
-            request.id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.name.as_deref(),
             request.multi,
             request.ip_lock,
@@ -127,7 +128,7 @@ impl RoleService for RoleServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.delete_role(request.id).await;
+        let result = self.auth_db.delete_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(ROLE_DELETE_ERR))
@@ -140,7 +141,10 @@ impl RoleService for RoleServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.add_role_access(request.id, request.procedure_id).await;
+        let result = self.auth_db.add_role_access(
+            Uuid::from_slice(&request.id).unwrap_or_default(), 
+            Uuid::from_slice(&request.procedure_id).unwrap_or_default()
+        ).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(ADD_ACCESS_ERR))
@@ -153,7 +157,10 @@ impl RoleService for RoleServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.remove_role_access(request.id, request.procedure_id).await;
+        let result = self.auth_db.remove_role_access(
+            Uuid::from_slice(&request.id).unwrap_or_default(), 
+            Uuid::from_slice(&request.procedure_id).unwrap_or_default()
+        ).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(RMV_ACCESS_ERR))

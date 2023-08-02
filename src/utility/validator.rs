@@ -1,4 +1,5 @@
 use tonic::{Status, Extensions};
+use uuid::Uuid;
 use jsonwebtoken::{decode, DecodingKey, Algorithm, Validation};
 use async_trait::async_trait;
 use super::token::TokenClaims;
@@ -93,7 +94,7 @@ pub trait AccessValidator {
 }
 
 pub enum ValidatorKind {
-    User(i32),
+    User(Uuid),
     Root
 }
 

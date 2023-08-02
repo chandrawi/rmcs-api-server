@@ -1,4 +1,5 @@
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::user::user_service_server::UserService;
 use rmcs_auth_api::user::{
@@ -32,8 +33,8 @@ impl UserService for UserServer {
     {
         let extension = request.extensions();
         let request = request.get_ref();
-        self.validate(extension, ValidatorKind::User(request.id)).await?;
-        let result = self.auth_db.read_user(request.id).await;
+        self.validate(extension, ValidatorKind::User(Uuid::from_slice(&request.id).unwrap_or_default())).await?;
+        let result = self.auth_db.read_user(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
@@ -59,7 +60,7 @@ impl UserService for UserServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.list_user_by_role(request.id).await;
+        let result = self.auth_db.list_user_by_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
@@ -82,7 +83,7 @@ impl UserService for UserServer {
             Ok(value) => value,
             Err(_) => return Err(Status::internal(USER_CREATE_ERR))
         };
-        Ok(Response::new(UserCreateResponse { id }))
+        Ok(Response::new(UserCreateResponse { id: id.as_bytes().to_vec() }))
     }
 
     async fn update_user(&self, request: Request<UserUpdate>)
@@ -90,9 +91,9 @@ impl UserService for UserServer {
     {
         let extension = request.extensions();
         let request = request.get_ref();
-        self.validate(extension, ValidatorKind::User(request.id)).await?;
+        self.validate(extension, ValidatorKind::User(Uuid::from_slice(&request.id).unwrap_or_default())).await?;
         let result = self.auth_db.update_user(
-            request.id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.name.as_deref(),
             request.email.as_deref(),
             request.phone.as_deref(),
@@ -111,8 +112,8 @@ impl UserService for UserServer {
     {
         let extension = request.extensions();
         let request = request.get_ref();
-        self.validate(extension, ValidatorKind::User(request.id)).await?;
-        let result = self.auth_db.delete_user(request.id).await;
+        self.validate(extension, ValidatorKind::User(Uuid::from_slice(&request.id).unwrap_or_default())).await?;
+        let result = self.auth_db.delete_user(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(USER_DELETE_ERR))
@@ -126,8 +127,8 @@ impl UserService for UserServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.add_user_role(
-            request.user_id,
-            request.role_id
+            Uuid::from_slice(&request.user_id).unwrap_or_default(),
+            Uuid::from_slice(&request.role_id).unwrap_or_default()
         ).await;
         match result {
             Ok(_) => (),
@@ -142,8 +143,8 @@ impl UserService for UserServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.remove_user_role(
-            request.user_id,
-            request.role_id
+            Uuid::from_slice(&request.user_id).unwrap_or_default(),
+            Uuid::from_slice(&request.role_id).unwrap_or_default()
         ).await;
         match result {
             Ok(_) => (),

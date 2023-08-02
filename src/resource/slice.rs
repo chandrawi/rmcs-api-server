@@ -1,5 +1,6 @@
 use tonic::{Request, Response, Status};
 use chrono::NaiveDateTime;
+use uuid::Uuid;
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::slice::slice_service_server::SliceService;
 use rmcs_resource_api::slice::{
@@ -66,7 +67,7 @@ impl SliceService for SliceServer {
     {
         self.validate(request.extensions(), LIST_SLICE_BY_DEVICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_device(request.device_id).await;
+        let result = self.resource_db.list_slice_by_device(Uuid::from_slice(&request.device_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
@@ -79,7 +80,7 @@ impl SliceService for SliceServer {
     {
         self.validate(request.extensions(), LIST_SLICE_BY_MODEL)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_model(request.model_id).await;
+        let result = self.resource_db.list_slice_by_model(Uuid::from_slice(&request.model_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
@@ -93,8 +94,8 @@ impl SliceService for SliceServer {
         self.validate(request.extensions(), LIST_SLICE_BY_DEVICE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_device_model(
-            request.device_id,
-            request.model_id
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -109,8 +110,8 @@ impl SliceService for SliceServer {
         self.validate(request.extensions(), CREATE_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.create_slice(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp_begin).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp_end).unwrap_or_default(),
             Some(request.index_begin),

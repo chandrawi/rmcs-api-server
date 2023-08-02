@@ -1,12 +1,13 @@
 use std::env;
 use std::path::PathBuf;
+use uuid::Uuid;
 use base64::{Engine as _, engine::general_purpose};
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use pkcs8::{DecodePrivateKey, EncodePrivateKey};
 use spki::{DecodePublicKey, EncodePublicKey};
 use rmcs_auth_db::schema::auth_user::{UserSchema, UserRoleSchema};
 
-pub const ROOT_ID: i32 = 0;
+pub const ROOT_ID: Uuid = Uuid::from_u128(0xffffffffffffffffffffffffffffffffu128);
 pub const ROOT_NAME: &str = "root";
 
 pub struct RootData {

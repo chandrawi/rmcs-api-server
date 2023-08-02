@@ -1,5 +1,6 @@
 use tonic::{Request, Response, Status};
 use chrono::NaiveDateTime;
+use uuid::Uuid;
 use rmcs_resource_db::{Resource, LogType, LogValue};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::common;
@@ -44,7 +45,7 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.read_log(
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
-            request.device_id
+            Uuid::from_slice(&request.device_id).unwrap_or_default()
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -60,7 +61,7 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_time(
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
-            request.device_id,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
@@ -77,7 +78,7 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_last_time(
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
-            request.device_id,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
@@ -95,7 +96,7 @@ impl LogService for LogServer {
         let result = self.resource_db.list_log_by_range_time(
             NaiveDateTime::from_timestamp_micros(request.begin).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.end).unwrap_or_default(),
-            request.device_id,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
@@ -112,7 +113,7 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.create_log(
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             LogStatus::from_i32(request.status).unwrap_or_default().as_str_name(),
             LogValue::from_bytes(
                 &request.log_bytes, 
@@ -133,7 +134,7 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.update_log(
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name()),
             request.log_bytes.map(|s| {
                 LogValue::from_bytes(
@@ -156,7 +157,7 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.delete_log(
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
-            request.device_id
+            Uuid::from_slice(&request.device_id).unwrap_or_default()
         ).await;
         match result {
             Ok(_) => (),

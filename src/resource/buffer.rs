@@ -1,5 +1,6 @@
 use tonic::{Request, Response, Status};
 use chrono::NaiveDateTime;
+use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
@@ -56,8 +57,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER_FIRST)?;
         let request = request.into_inner();
         let result = self.resource_db.read_buffer_first(
-            request.device_id,
-            request.model_id,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
         let result = match result {
@@ -73,8 +74,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER_LAST)?;
         let request = request.into_inner();
         let result = self.resource_db.read_buffer_last(
-            request.device_id,
-            request.model_id,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
         let result = match result {
@@ -91,8 +92,8 @@ impl BufferService for BufferServer {
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_first(
             request.number,
-            request.device_id,
-            request.model_id,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
@@ -109,8 +110,8 @@ impl BufferService for BufferServer {
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_last(
             request.number,
-            request.device_id,
-            request.model_id,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
@@ -126,8 +127,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), CREATE_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.create_buffer(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             Some(request.index),
             ArrayDataValue::from_bytes(

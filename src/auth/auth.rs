@@ -1,4 +1,5 @@
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 use chrono::{Duration, Utc};
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::auth::auth_service_server::AuthService;
@@ -34,7 +35,7 @@ impl AuthService for AuthServer {
         -> Result<Response<ApiKeyResponse>, Status>
     {
         let request = request.into_inner();
-        let result = self.auth_db.read_api(request.api_id).await;
+        let result = self.auth_db.read_api(Uuid::from_slice(&request.api_id).unwrap_or_default()).await;
         let public_key = match result {
             Ok(api) => api.public_key,
             Err(_) => return Err(Status::not_found(API_ID_NOT_FOUND))
@@ -46,7 +47,7 @@ impl AuthService for AuthServer {
         -> Result<Response<ApiLoginResponse>, Status>
     {
         let request = request.into_inner();
-        let result = self.auth_db.read_api(request.api_id).await;
+        let result = self.auth_db.read_api(Uuid::from_slice(&request.api_id).unwrap_or_default()).await;
         let (access_key, access_procedures) = match result {
             Ok(api) => {
                 // decrypt encrypted password hash and return error if password is not verified
@@ -150,7 +151,7 @@ impl AuthService for AuthServer {
                     let gen = iter_tokens.next().unwrap_or_default();
                     auth_token = gen.2;
                     AccessTokenMap {
-                        api_id: e.api_id,
+                        api_id: e.api_id.as_bytes().to_vec(),
                         access_token: token::generate_token(gen.0, &e.role, e.access_duration, &e.access_key)
                             .unwrap_or(String::new()),
                         refresh_token: gen.1
@@ -165,7 +166,7 @@ impl AuthService for AuthServer {
             },
             Err(e) => return Err(e)
         };
-        Ok(Response::new(UserLoginResponse { user_id, auth_token, access_tokens }))
+        Ok(Response::new(UserLoginResponse { user_id: user_id.as_bytes().to_vec(), auth_token, access_tokens }))
     }
 
     async fn user_refresh(&self, request: Request<UserRefreshRequest>)
@@ -176,7 +177,7 @@ impl AuthService for AuthServer {
                 std::net::IpAddr::V6(v) => v.octets().to_vec()
             }).unwrap_or(Vec::new());
         let request = request.into_inner();
-        let result = self.auth_db.read_api(request.api_id).await;
+        let result = self.auth_db.read_api(Uuid::from_slice(&request.api_id).unwrap_or_default()).await;
         let (access_key, token_claims) = match result {
             Ok(api) => {
                 // verify access token and get token claims
@@ -185,7 +186,7 @@ impl AuthService for AuthServer {
                 (api.access_key, token_claims)
             },
             Err(_) => {
-                if request.api_id != ROOT_ID {
+                if request.api_id != ROOT_ID.as_bytes().to_vec() {
                     return Err(Status::not_found(API_ID_NOT_FOUND));
                 }
                 let root = root_data().ok_or(Status::not_found(API_ID_NOT_FOUND))?;
@@ -233,7 +234,7 @@ impl AuthService for AuthServer {
         };
         match tokens.into_iter().next() {
             Some(token) => {
-                if token.user_id == request.user_id {
+                if token.user_id.as_bytes().to_vec() == request.user_id {
                     self.auth_db.delete_auth_token(&request.auth_token).await
                         .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
                 } else {

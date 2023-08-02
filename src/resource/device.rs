@@ -1,4 +1,5 @@
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 use rmcs_resource_db::{Resource, ConfigType, ConfigValue};
 use rmcs_resource_api::device::device_service_server::DeviceService;
 use rmcs_resource_api::common;
@@ -55,7 +56,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_device(request.id).await;
+        let result = self.resource_db.read_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
@@ -81,7 +82,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), LIST_DEVICE_BY_GATEWAY)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_device_by_gateway(request.id).await;
+        let result = self.resource_db.list_device_by_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
@@ -94,7 +95,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), LIST_DEVICE_BY_TYPE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_device_by_type(request.id).await;
+        let result = self.resource_db.list_device_by_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
@@ -121,8 +122,8 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), LIST_DEVICE_BY_GATEWAY_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_by_gateway_type(
-            request.gateway_id,
-            request.type_id
+            Uuid::from_slice(&request.gateway_id).unwrap_or_default(),
+            Uuid::from_slice(&request.type_id).unwrap_or_default()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -137,7 +138,7 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), LIST_DEVICE_BY_GATEWAY_NAME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_by_gateway_name(
-            request.gateway_id,
+            Uuid::from_slice(&request.gateway_id).unwrap_or_default(),
             &request.name
         ).await;
         let results = match result {
@@ -153,9 +154,9 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), CREATE_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.create_device(
-            request.id,
-            request.gateway_id,
-            request.device_type.unwrap_or_default().id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
+            Uuid::from_slice(&request.gateway_id).unwrap_or_default(),
+            Uuid::from_slice(&request.device_type.unwrap_or_default().id).unwrap_or_default(),
             &request.serial_number,
             &request.name,
             Some(&request.description)
@@ -173,9 +174,9 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), UPDATE_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.update_device(
-            request.id,
-            request.gateway_id,
-            request.type_id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
+            request.gateway_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.type_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.serial_number.as_deref(),
             request.name.as_deref(),
             request.description.as_deref()
@@ -192,7 +193,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), DELETE_DEVICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.delete_device(request.id).await;
+        let result = self.resource_db.delete_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(DEVICE_DELETE_ERR))
@@ -205,7 +206,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), READ_GATEWAY)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_gateway(request.id).await;
+        let result = self.resource_db.read_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
@@ -231,7 +232,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), LIST_GATEWAY_BY_TYPE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_gateway_by_type(request.id).await;
+        let result = self.resource_db.list_gateway_by_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
@@ -258,8 +259,8 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), CREATE_GATEWAY)?;
         let request = request.into_inner();
         let result = self.resource_db.create_gateway(
-            request.id,
-            request.gateway_type.unwrap_or_default().id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
+            Uuid::from_slice(&request.gateway_type.unwrap_or_default().id).unwrap_or_default(),
             &request.serial_number,
             &request.name,
             Some(&request.description)
@@ -277,8 +278,8 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), UPDATE_GATEWAY)?;
         let request = request.into_inner();
         let result = self.resource_db.update_gateway(
-            request.id,
-            request.type_id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
+            request.type_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.serial_number.as_deref(),
             request.name.as_deref(),
             request.description.as_deref()
@@ -295,7 +296,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), DELETE_GATEWAY)?;
         let request = request.into_inner();
-        let result = self.resource_db.delete_gateway(request.id).await;
+        let result = self.resource_db.delete_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(GATEWAY_DELETE_ERR))
@@ -321,7 +322,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), LIST_DEVICE_CONFIG)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_device_config_by_device(request.id).await;
+        let result = self.resource_db.list_device_config_by_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
@@ -335,7 +336,7 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), CREATE_DEVICE_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_device_config(
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             &request.name,
             ConfigValue::from_bytes(
                 &request.config_bytes, 
@@ -404,7 +405,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), LIST_GATEWAY_CONFIG)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_gateway_config_by_gateway(request.id).await;
+        let result = self.resource_db.list_gateway_config_by_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
@@ -418,7 +419,7 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), CREATE_GATEWAY_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_gateway_config(
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             &request.name,
             ConfigValue::from_bytes(
                 &request.config_bytes, 
@@ -474,7 +475,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), READ_TYPE)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_type(request.id).await;
+        let result = self.resource_db.read_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(TYPE_NOT_FOUND))
@@ -508,7 +509,7 @@ impl DeviceService for DeviceServer {
             Ok(value) => value,
             Err(_) => return Err(Status::internal(TYPE_CREATE_ERR))
         };
-        Ok(Response::new(TypeCreateResponse { id }))
+        Ok(Response::new(TypeCreateResponse { id: id.as_bytes().to_vec() }))
     }
 
     async fn update_type(&self, request: Request<TypeUpdate>)
@@ -517,7 +518,7 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), UPDATE_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.update_type(
-            request.id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.name.as_deref(),
             request.description.as_deref()
         ).await;
@@ -533,7 +534,7 @@ impl DeviceService for DeviceServer {
     {
         self.validate(request.extensions(), DELETE_TYPE)?;
         let request = request.into_inner();
-        let result = self.resource_db.delete_type(request.id).await;
+        let result = self.resource_db.delete_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(TYPE_DELETE_ERR))
@@ -547,8 +548,8 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), ADD_TYPE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.add_type_model(
-            request.id,
-            request.model_id
+            Uuid::from_slice(&request.id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default()
         ).await;
         match result {
             Ok(_) => (),
@@ -563,8 +564,8 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), REMOVE_TYPE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_type_model(
-            request.id,
-            request.model_id
+            Uuid::from_slice(&request.id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default()
         ).await;
         match result {
             Ok(_) => (),

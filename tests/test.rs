@@ -5,6 +5,7 @@ mod tests {
     use tonic::{Request, Status, transport::{Server, Channel}, service::Interceptor, metadata::MetadataValue};
     use std::process::{Command, Stdio};
     use std::time::{SystemTime, Duration};
+    use uuid::Uuid;
     use rmcs_auth_db::Auth;
     use rmcs_auth_api::api::{api_service_server::ApiServiceServer, api_service_client::ApiServiceClient};
     use rmcs_auth_api::api::{ApiSchema, ProcedureSchema, ApiId, ProcedureId};
@@ -48,7 +49,7 @@ mod tests {
         ("add_model_type", &["admin"]),
         ("remove_model_type", &["admin"])
     ];
-    
+
     const ROLES: &[&str] = &["admin", "user"];
     
     const ADMIN_NAME: &str = "administrator";
@@ -97,7 +98,7 @@ mod tests {
             .with_validator(token_key, accesses);
         let log_server = LogServer::new(resource_db.clone())
             .with_validator(token_key, accesses);
-    
+
         Server::builder()
             .add_service(ModelServiceServer::with_interceptor(model_server, interceptor))
             .add_service(DeviceServiceServer::with_interceptor(device_server, interceptor))
@@ -150,7 +151,7 @@ mod tests {
         }
     }
 
-    async fn login(address: &str, username: &str, password: &str) -> (i32, String, String, String) {
+    async fn login(address: &str, username: &str, password: &str) -> (Uuid, String, String, String) {
         let channel = Channel::from_shared(address.to_owned()).unwrap().connect().await.unwrap();
         let mut client = AuthServiceClient::new(channel);
         let request = Request::new(UserKeyRequest {
@@ -168,14 +169,14 @@ mod tests {
         let response = client.user_login(request).await.unwrap().into_inner();
         let (access_token, refresh_token) = response.access_tokens.into_iter()
             .map(|a| (a.access_token, a.refresh_token)).next().unwrap();
-        (response.user_id, response.auth_token, access_token, refresh_token)
+        (Uuid::from_slice(&response.user_id).unwrap(), response.auth_token, access_token, refresh_token)
     }
 
-    async fn logout(address: &str, user_id: i32, auth_token: &str) {
+    async fn logout(address: &str, user_id: Uuid, auth_token: &str) {
         let channel = Channel::from_shared(address.to_owned()).unwrap().connect().await.unwrap();
         let mut client = AuthServiceClient::new(channel);
         let request = Request::new(UserLogoutRequest {
-            user_id,
+            user_id: user_id.as_bytes().to_vec(),
             auth_token: auth_token.to_owned()
         });
         client.user_logout(request).await.unwrap().into_inner();
@@ -219,7 +220,7 @@ mod tests {
 
         // create api and procedures
         let request = Request::new(ApiSchema {
-            id: 0,
+            id: Uuid::nil().as_bytes().to_vec(),
             name: String::from("resource api"),
             address: resource_addr_client.clone(),
             category: String::from("resource"),
@@ -235,8 +236,8 @@ mod tests {
         let mut proc_ids = Vec::new();
         for name in &proc_names {
             let request = Request::new(ProcedureSchema {
-                id: 0,
-                api_id,
+                id: Uuid::nil().as_bytes().to_vec(),
+                api_id: api_id.clone(),
                 name: name.to_owned(),
                 description: String::new(),
                 roles: Vec::new()
@@ -249,8 +250,8 @@ mod tests {
         let mut role_ids = Vec::new();
         for &name in ROLES {
             let request = Request::new(RoleSchema {
-                id: 0,
-                api_id,
+                id: Uuid::nil().as_bytes().to_vec(),
+                api_id: api_id.clone(),
                 name: name.to_owned(),
                 multi: false,
                 ip_lock: true,
@@ -277,10 +278,10 @@ mod tests {
                     .map(|(i, _)| i)
                     .next().unwrap();
                 let role_id = role_ids.get(index).unwrap().to_owned();
-                role_accesses.push((role_id, proc_id));
+                role_accesses.push((role_id, proc_id.clone()));
             }
         }
-        for &(id, procedure_id) in &role_accesses {
+        for (id, procedure_id) in role_accesses.clone() {
             let request = Request::new(RoleAccess {
                 id,
                 procedure_id
@@ -293,7 +294,7 @@ mod tests {
         let mut user_roles = Vec::new();
         for &(user, password, role) in USERS {
             let request = Request::new(UserSchema {
-                id: 0,
+                id: Uuid::nil().as_bytes().to_vec(),
                 name: user.to_owned(),
                 email: String::new(),
                 phone: String::new(),
@@ -302,16 +303,16 @@ mod tests {
                 roles: Vec::new()
             });
             let response = user_service.create_user(request).await.unwrap().into_inner();
-            user_ids.push(response.id);
+            user_ids.push(response.id.clone());
             let index = ROLES.iter()
                 .enumerate()
                 .filter(|(_, s)| **s == role)
                 .map(|(i, _)| i)
                 .next().unwrap();
             let role_id = role_ids.get(index).unwrap().to_owned();
-            user_roles.push((response.id, role_id));
+            user_roles.push((response.id.clone(), role_id));
         }
-        for &(user_id, role_id) in &user_roles {
+        for (user_id, role_id) in user_roles.clone() {
             let request = Request::new(UserRole {
                 user_id,
                 role_id
@@ -321,7 +322,7 @@ mod tests {
 
         // get api access key and role access schema to be used by resource server
         let request = Request::new(ApiId {
-            id: api_id
+            id: api_id.clone()
         });
         let response = api_service.read_api(request).await.unwrap().into_inner();
         let api_schema = response.result.unwrap();
@@ -357,7 +358,7 @@ mod tests {
 
         // try to create model using user service and admin service, user should failed and admin should success
         let schema = ModelSchema {
-            id: 0,
+            id: Uuid::nil().as_bytes().to_vec(),
             indexing: 0, // Timestamp indexing
             category: String::from("UPLINK"),
             name: String::from("name"),
@@ -375,21 +376,21 @@ mod tests {
         // add model type using admin service
         let model_id = try_response.unwrap().into_inner().id;
         let request = Request::new(ModelTypes {
-            id: model_id,
+            id: model_id.clone(),
             types: vec![2, 6]
         });
         model_service_admin.add_model_type(request).await.unwrap();
 
         // read created model using user service
         let request = Request::new(ModelId {
-            id: model_id
+            id: model_id.clone()
         });
         let try_response = model_service_user.read_model(request).await;
         assert!(try_response.is_ok());
 
         // remove model type and delete model
         let id = ModelId {
-            id: model_id
+            id: model_id.clone()
         };
         let request = Request::new(id.clone());
         model_service_admin.remove_model_type(request).await.unwrap();
@@ -402,14 +403,14 @@ mod tests {
         logout(&auth_addr_client, admin_id, &admin_auth).await;
 
         // remove user links to role and delete user
-        for &(user_id, role_id) in &user_roles {
+        for (user_id, role_id) in user_roles.clone() {
             let request = Request::new(UserRole {
                 user_id,
                 role_id
             });
             user_service.remove_user_role(request).await.unwrap();
         }
-        for &id in &user_ids {
+        for id in role_ids.clone() {
             let request = Request::new(UserId {
                 id
             });
@@ -417,14 +418,14 @@ mod tests {
         }
 
         // remove role links to procedure and delete roles
-        for &(id, procedure_id) in &role_accesses {
+        for (id, procedure_id) in role_accesses.clone() {
             let request = Request::new(RoleAccess {
                 id,
                 procedure_id
             });
             role_service.remove_role_access(request).await.unwrap();
         }
-        for &id in &role_ids {
+        for id in role_ids.clone() {
             let request = Request::new(RoleId {
                 id
             });
@@ -432,14 +433,14 @@ mod tests {
         }
 
         // delete procedures and api
-        for &id in &proc_ids {
+        for id in role_ids.clone() {
             let request = Request::new(ProcedureId {
                 id
             });
             api_service.delete_procedure(request).await.unwrap();
         }
         let request = Request::new(ApiId {
-            id: api_id
+            id: api_id.clone()
         });
         api_service.delete_api(request).await.unwrap();
 
@@ -448,7 +449,7 @@ mod tests {
 
         // try to read api after logout, should error
         let request = Request::new(ApiId {
-            id: api_id
+            id: api_id.clone()
         });
         let try_response = api_service.read_api(request).await;
         assert!(try_response.is_err());

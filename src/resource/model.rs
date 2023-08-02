@@ -1,4 +1,5 @@
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataIndexing, DataType, ConfigType, ConfigValue};
 use rmcs_resource_api::model::model_service_server::ModelService;
 use rmcs_resource_api::common;
@@ -44,7 +45,7 @@ impl ModelService for ModelServer {
     {
         self.validate(request.extensions(), READ_MODEL)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_model(request.id).await;
+        let result = self.resource_db.read_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
@@ -109,7 +110,7 @@ impl ModelService for ModelServer {
             Ok(value) => value,
             Err(_) => return Err(Status::internal(MODEL_CREATE_ERR))
         };
-        Ok(Response::new(ModelCreateResponse { id }))
+        Ok(Response::new(ModelCreateResponse { id: id.as_bytes().to_vec() }))
     }
 
     async fn update_model(&self, request: Request<ModelUpdate>)
@@ -118,7 +119,7 @@ impl ModelService for ModelServer {
         self.validate(request.extensions(), UPDATE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.update_model(
-            request.id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.indexing.map(|s| DataIndexing::from(common::DataIndexing::from_i32(s).unwrap_or_default())),
             request.category.as_deref(),
             request.name.as_deref(),
@@ -136,7 +137,7 @@ impl ModelService for ModelServer {
     {
         self.validate(request.extensions(), DELETE_MODEL)?;
         let request = request.into_inner();
-        let result = self.resource_db.delete_model(request.id).await;
+        let result = self.resource_db.delete_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(MODEL_DELETE_ERR))
@@ -150,7 +151,7 @@ impl ModelService for ModelServer {
         self.validate(request.extensions(), ADD_MODEL_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.add_model_type(
-            request.id,
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.types.into_iter().map(|e| {
                 DataType::from(common::DataType::from_i32(e).unwrap_or_default())
             }).collect::<Vec<DataType>>().as_ref()
@@ -167,7 +168,7 @@ impl ModelService for ModelServer {
     {
         self.validate(request.extensions(), REMOVE_MODEL_TYPE)?;
         let request = request.into_inner();
-        let result = self.resource_db.remove_model_type(request.id).await;
+        let result = self.resource_db.remove_model_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(RMV_TYPE_ERR))
@@ -193,7 +194,7 @@ impl ModelService for ModelServer {
     {
         self.validate(request.extensions(), LIST_MODEL_CONFIG)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_model_config_by_model(request.id).await;
+        let result = self.resource_db.list_model_config_by_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
@@ -207,7 +208,7 @@ impl ModelService for ModelServer {
         self.validate(request.extensions(), CREATE_MODEL_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_model_config(
-            request.model_id,
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             request.index,
             &request.name,
             ConfigValue::from_bytes(

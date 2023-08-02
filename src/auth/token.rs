@@ -1,5 +1,6 @@
 use tonic::{Request, Response, Status};
 use chrono::NaiveDateTime;
+use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::token::token_service_server::TokenService;
 use rmcs_auth_api::token::{
@@ -60,7 +61,7 @@ impl TokenService for TokenServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.list_token_by_user(request.user_id).await;
+        let result = self.auth_db.list_token_by_user(Uuid::from_slice(&request.user_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
@@ -74,7 +75,7 @@ impl TokenService for TokenServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_access_token(
-            request.user_id,
+            Uuid::from_slice(&request.user_id).unwrap_or_default(),
             &request.auth_token,
             NaiveDateTime::from_timestamp_micros(request.expire).unwrap_or_default(),
             request.ip.as_slice()
@@ -92,7 +93,7 @@ impl TokenService for TokenServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_auth_token(
-            request.user_id,
+            Uuid::from_slice(&request.user_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.expire).unwrap_or_default(),
             request.ip.as_slice(),
             request.number
@@ -174,7 +175,7 @@ impl TokenService for TokenServer {
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
-        let result = self.auth_db.delete_token_by_user(request.user_id).await;
+        let result = self.auth_db.delete_token_by_user(Uuid::from_slice(&request.user_id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(TOKEN_DELETE_ERR))

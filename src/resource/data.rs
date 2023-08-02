@@ -1,5 +1,6 @@
 use tonic::{Request, Response, Status};
 use chrono::NaiveDateTime;
+use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::common;
@@ -46,8 +47,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.read_data(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             Some(request.index)
         ).await;
@@ -64,8 +65,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), LIST_DATA_BY_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_time(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
@@ -81,8 +82,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), LIST_DATA_BY_LAST_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_last_time(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
@@ -98,8 +99,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), LIST_DATA_BY_RANGE_TIME)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_range_time(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.begin).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.end).unwrap_or_default()
         ).await;
@@ -116,8 +117,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), LIST_DATA_BY_NUMBER_BEFORE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_number_before(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
@@ -134,8 +135,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), LIST_DATA_BY_NUMBER_AFTER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_number_after(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
@@ -151,7 +152,7 @@ impl DataService for DataServer {
     {
         self.validate(request.extensions(), GET_DATA_MODEL)?;
         let request = request.into_inner();
-        let result = self.resource_db.get_data_model(request.id).await;
+        let result = self.resource_db.get_data_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(DATA_MODEL_NOT_FOUND))
@@ -169,7 +170,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.read_data_with_model(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             Some(request.index)
         ).await;
@@ -190,7 +191,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.list_data_with_model_by_time(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
@@ -210,7 +211,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.list_data_with_model_by_last_time(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default()
         ).await;
         let results = match result {
@@ -230,7 +231,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.list_data_with_model_by_range_time(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.begin).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.end).unwrap_or_default()
         ).await;
@@ -251,7 +252,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.list_data_with_model_by_number_before(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
@@ -272,7 +273,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.list_data_with_model_by_number_after(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             request.number
         ).await;
@@ -289,8 +290,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), CREATE_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.create_data(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             Some(request.index),
             ArrayDataValue::from_bytes(
@@ -317,7 +318,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.create_data_with_model(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             Some(request.index),
             ArrayDataValue::from_bytes(
@@ -340,8 +341,8 @@ impl DataService for DataServer {
         self.validate(request.extensions(), DELETE_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_data(
-            request.device_id,
-            request.model_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             Some(request.index)
         ).await;
@@ -362,7 +363,7 @@ impl DataService for DataServer {
         }
         let result = self.resource_db.delete_data_with_model(
             request.model.unwrap().into(),
-            request.device_id,
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
             Some(request.index)
         ).await;
