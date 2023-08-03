@@ -2,43 +2,22 @@
 #[cfg(test)]
 mod tests {
     use std::env;
-    use tonic::{Request, Status, transport::{Server, Channel}, service::Interceptor, metadata::MetadataValue};
+    use tonic::{Request, Status, transport::Channel, service::Interceptor, metadata::MetadataValue};
     use std::process::{Command, Stdio};
     use std::time::{SystemTime, Duration};
+    use sqlx::Error;
+    use sqlx::postgres::PgPoolOptions;
     use uuid::Uuid;
-    use rmcs_auth_db::Auth;
-    use rmcs_auth_api::api::{api_service_server::ApiServiceServer, api_service_client::ApiServiceClient};
+    use rmcs_auth_api::api::api_service_client::ApiServiceClient;
     use rmcs_auth_api::api::{ApiSchema, ProcedureSchema, ApiId, ProcedureId};
-    use rmcs_auth_api::role::{role_service_server::RoleServiceServer, role_service_client::RoleServiceClient};
+    use rmcs_auth_api::role::role_service_client::RoleServiceClient;
     use rmcs_auth_api::role::{RoleSchema, RoleAccess, RoleId};
-    use rmcs_auth_api::user::{user_service_server::UserServiceServer, user_service_client::UserServiceClient};
+    use rmcs_auth_api::user::user_service_client::UserServiceClient;
     use rmcs_auth_api::user::{UserSchema, UserRole, UserId};
-    use rmcs_auth_api::token::token_service_server::TokenServiceServer;
-    use rmcs_auth_api::auth::{auth_service_server::AuthServiceServer, auth_service_client::AuthServiceClient};
+    use rmcs_auth_api::auth::auth_service_client::AuthServiceClient;
     use rmcs_auth_api::auth::{UserKeyRequest, UserLoginRequest, UserLogoutRequest};
-    use rmcs_resource_db::Resource;
-    use rmcs_resource_api::model::{model_service_server::ModelServiceServer, model_service_client::ModelServiceClient};
+    use rmcs_resource_api::model::model_service_client::ModelServiceClient;
     use rmcs_resource_api::model::{ModelSchema, ModelTypes, ModelId};
-    use rmcs_resource_api::device::device_service_server::DeviceServiceServer;
-    use rmcs_resource_api::group::group_service_server::GroupServiceServer;
-    use rmcs_resource_api::data::data_service_server::DataServiceServer;
-    use rmcs_resource_api::buffer::buffer_service_server::BufferServiceServer;
-    use rmcs_resource_api::slice::slice_service_server::SliceServiceServer;
-    use rmcs_resource_api::log::log_service_server::LogServiceServer;
-    use rmcs_api_server::auth::api::ApiServer;
-    use rmcs_api_server::auth::role::RoleServer;
-    use rmcs_api_server::auth::user::UserServer;
-    use rmcs_api_server::auth::token::TokenServer;
-    use rmcs_api_server::auth::auth::AuthServer;
-    use rmcs_api_server::resource::model::ModelServer;
-    use rmcs_api_server::resource::device::DeviceServer;
-    use rmcs_api_server::resource::group::GroupServer;
-    use rmcs_api_server::resource::data::DataServer;
-    use rmcs_api_server::resource::buffer::BufferServer;
-    use rmcs_api_server::resource::slice::SliceServer;
-    use rmcs_api_server::resource::log::LogServer;
-    use rmcs_api_server::utility::interceptor;
-    use rmcs_api_server::utility::validator::{AuthValidator, AccessValidator, AccessSchema};
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
     use rmcs_api_server::utility::root::{ROOT_NAME, root_data};
 
@@ -62,79 +41,98 @@ mod tests {
         (USER_NAME, USER_PW, "user")
     ];
 
-    async fn auth_server(db_url: &str, addr: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let auth_db = Auth::new_with_url(db_url).await;
-        let api_server = ApiServer::new(auth_db.clone()).with_validator();
-        let role_server = RoleServer::new(auth_db.clone()).with_validator();
-        let user_server = UserServer::new(auth_db.clone()).with_validator();
-        let token_server = TokenServer::new(auth_db.clone()).with_validator();
-        let auth_server = AuthServer::new(auth_db.clone());
-    
-        Server::builder()
-            .add_service(ApiServiceServer::with_interceptor(api_server, interceptor))
-            .add_service(RoleServiceServer::with_interceptor(role_server, interceptor))
-            .add_service(UserServiceServer::with_interceptor(user_server, interceptor))
-            .add_service(TokenServiceServer::with_interceptor(token_server, interceptor))
-            .add_service(AuthServiceServer::new(auth_server))
-            .serve(addr.parse()?)
-            .await?;
-    
-        Ok(())
+    enum TestServerKind {
+        Auth,
+        Resource
     }
 
-    async fn resource_server(db_url: &str, addr: &str, token_key: &[u8], accesses: &[AccessSchema]) -> Result<(), Box<dyn std::error::Error>> {
-        let resource_db = Resource::new_with_url(db_url).await;
-        let model_server = ModelServer::new(resource_db.clone())
-            .with_validator(token_key, accesses);
-        let device_server = DeviceServer::new(resource_db.clone())
-            .with_validator(token_key, accesses);
-        let group_server = GroupServer::new(resource_db.clone())
-            .with_validator(token_key, accesses);
-        let data_server = DataServer::new(resource_db.clone())
-            .with_validator(token_key, accesses);
-        let buffer_server = BufferServer::new(resource_db.clone())
-            .with_validator(token_key, accesses);
-        let slice_server = SliceServer::new(resource_db.clone())
-            .with_validator(token_key, accesses);
-        let log_server = LogServer::new(resource_db.clone())
-            .with_validator(token_key, accesses);
-
-        Server::builder()
-            .add_service(ModelServiceServer::with_interceptor(model_server, interceptor))
-            .add_service(DeviceServiceServer::with_interceptor(device_server, interceptor))
-            .add_service(GroupServiceServer::with_interceptor(group_server, interceptor))
-            .add_service(DataServiceServer::with_interceptor(data_server, interceptor))
-            .add_service(BufferServiceServer::with_interceptor(buffer_server, interceptor))
-            .add_service(SliceServiceServer::with_interceptor(slice_server, interceptor))
-            .add_service(LogServiceServer::with_interceptor(log_server, interceptor))
-            .serve(addr.parse()?)
-            .await?;
-    
-        Ok(())
+    struct TestServer {
+        kind: TestServerKind,
+        db_url: String,
+        address: String,
+        bin_name: String,
+        api_cred: Option<(String, String)>
     }
 
-    fn wait_server(port: &str) {
-        let mut count = 0;
-        let time_limit = SystemTime::now() + Duration::from_secs(30);
-        while SystemTime::now() < time_limit && count == 0 {
-            let ss_child = Command::new("ss")
-                .arg("-tulpn")
-                .stdout(Stdio::piped())
+    impl TestServer {
+        fn new(kind: TestServerKind, api_id: Option<&str>, password: Option<&str>) -> TestServer
+        {
+            dotenvy::dotenv().ok();
+            let (env_db, env_addr, bin_name) = match kind {
+                TestServerKind::Auth => ("DATABASE_AUTH_TEST_URL", "ADDRESS_AUTH", "test_auth_server"),
+                TestServerKind::Resource => ("DATABASE_RESOURCE_TEST_URL", "ADDRESS_RESOURCE", "test_resource_server")
+            };
+            let db_url = env::var(env_db).unwrap();
+            let address = String::from("http://") +  env::var(env_addr).unwrap().as_str();
+            let bin_name = String::from(bin_name);
+            let api_cred = match (api_id, password) {
+                (Some(id), Some(pw)) => Some((String::from(id), String::from(pw))),
+                _ => None
+            };
+            TestServer { kind, db_url, address, bin_name, api_cred }
+        }
+        async fn truncate_tables(&self) -> Result<(), Error>
+        {
+            let pool = PgPoolOptions::new().connect(self.db_url.as_str()).await?;
+            let sql = match self.kind {
+                TestServerKind::Auth => "TRUNCATE TABLE \"token\", \"user_role\", \"user\", \"role_access\", \"role\", \"api_procedure\", \"api\";",
+                TestServerKind::Resource => "TRUNCATE TABLE \"system_log\", \"data_slice\", \"data_buffer\", \"data\", \"group_model_map\", \"group_device_map\", \"group_model\", \"group_device\", \"device_config\", \"device\", \"device_type_model\", \"device_type\", \"model_config\", \"model_type\", \"model\";"
+            };
+            sqlx::query(sql)
+                .execute(&pool)
+                .await?;
+            Ok(())
+        }
+        fn start_server(&self)
+        {
+            // start server using cargo run command
+            let args: Vec<&str> = match &self.api_cred {
+                Some((id, pw)) => vec![
+                    "run", "-p", "rmcs-api-server", "--bin", self.bin_name.as_str(),
+                    "--", "--db-url", self.db_url.as_str(), "--secured",
+                    "--api-id", id.as_str(), "--password", pw.as_str()
+                ],
+                None => vec![
+                    "run", "-p", "rmcs-api-server", "--bin", self.bin_name.as_str(),
+                    "--", "--db-url", self.db_url.as_str(), "--secured"
+                ]
+            };
+            Command::new("cargo")
+                .args(args)
                 .spawn()
-                .unwrap();
-            let grep_child = Command::new("grep")
-                .args([port, "-c"])
-                .stdin(Stdio::from(ss_child.stdout.unwrap()))
-                .stdout(Stdio::piped())
+                .expect("running auth server failed");
+            // wait until server process is running
+            let port = String::from(":") + self.address.split(":").into_iter().last().unwrap();
+            let mut count = 0;
+            let time_limit = SystemTime::now() + Duration::from_secs(30);
+            while SystemTime::now() < time_limit && count == 0 {
+                let ss_child = Command::new("ss")
+                    .arg("-tulpn")
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .unwrap();
+                let grep_child = Command::new("grep")
+                    .args([port.as_str(), "-c"])
+                    .stdin(Stdio::from(ss_child.stdout.unwrap()))
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .unwrap();
+                let output = grep_child.wait_with_output().unwrap();
+                count = String::from_utf8(output.stdout)
+                    .unwrap()
+                    .replace("\n", "")
+                    .parse()
+                    .unwrap_or(0);
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+        fn stop_server(&self)
+        {
+            // stop server service
+            Command::new("killall")
+                .args([self.bin_name.as_str()])
                 .spawn()
-                .unwrap();
-            let output = grep_child.wait_with_output().unwrap();
-            count = String::from_utf8(output.stdout)
-                .unwrap()
-                .replace("\n", "")
-                .parse()
-                .unwrap_or(0);
-            std::thread::sleep(Duration::from_millis(10));
+                .expect("stopping auth server failed");
         }
     }
 
@@ -185,31 +183,18 @@ mod tests {
     #[tokio::test]
     async fn test_auth() -> Result<(), Box<dyn std::error::Error>>
     {
-        // get database urls and server address for auth and resource
-        dotenvy::dotenv().ok();
-        let auth_db_url = env::var("DATABASE_AUTH_TEST_URL").unwrap();
-        let auth_addr = env::var("ADDRESS_AUTH").unwrap();
-        let auth_addr_client = String::from("http://") + &auth_addr;
-        let auth_port = auth_addr_client.split(":").into_iter().last().unwrap();
-        let resource_db_url = env::var("DATABASE_RESOURCE_TEST_URL").unwrap();
-        let resource_addr = env::var("ADDRESS_RESOURCE").unwrap();
-        let resource_addr_client = String::from("http://") + &resource_addr;
-        let resource_port = resource_addr_client.split(":").into_iter().last().unwrap();
-
         // start auth server and wait until server process is running
-        tokio::spawn(async move {
-            auth_server(&auth_db_url, &auth_addr).await.unwrap();
-            tokio::task::yield_now().await;
-        });
-        wait_server(auth_port);
+        let auth_server = TestServer::new(TestServerKind::Auth, None, None);
+        auth_server.truncate_tables().await.unwrap();
+        auth_server.start_server();
 
         // root login
         let root = root_data().unwrap();
         let (root_id, root_auth, _, _) = 
-            login(&auth_addr_client, ROOT_NAME, &root.password).await;
+            login(&auth_server.address, ROOT_NAME, &root.password).await;
 
         // construct api, role, and user service using root token
-        let channel = Channel::from_shared(auth_addr_client.clone()).unwrap().connect().await.unwrap();
+        let channel = Channel::from_shared(auth_server.address.clone()).unwrap().connect().await.unwrap();
         let interceptor = TokenInterceptor(root_auth.to_owned());
         let mut api_service = 
             ApiServiceClient::with_interceptor(channel.clone(), interceptor.clone());
@@ -219,14 +204,15 @@ mod tests {
             UserServiceClient::with_interceptor(channel.clone(), interceptor.clone());
 
         // create api and procedures
+        let password = String::from("Api_pa55w0rd");
         let request = Request::new(ApiSchema {
             id: Uuid::nil().as_bytes().to_vec(),
             name: String::from("resource api"),
-            address: resource_addr_client.clone(),
+            address: String::new(),
             category: String::from("resource"),
             description: String::new(),
             public_key: Vec::new(),
-            password: String::from("Api_pa55w0rd"),
+            password: password.clone(),
             access_key: Vec::new(),
             procedures: Vec::new()
         });
@@ -320,35 +306,20 @@ mod tests {
             user_service.add_user_role(request).await.unwrap();
         }
 
-        // get api access key and role access schema to be used by resource server
-        let request = Request::new(ApiId {
-            id: api_id.clone()
-        });
-        let response = api_service.read_api(request).await.unwrap().into_inner();
-        let api_schema = response.result.unwrap();
-        let token_key = api_schema.access_key;
-        let accesses: Vec<AccessSchema> = api_schema.procedures.into_iter().map(|s| {
-            AccessSchema {
-                procedure: s.name,
-                roles: s.roles
-            }
-        }).collect();
-
         // start resource server and wait until server process is running
-        tokio::spawn(async move {
-            resource_server(&resource_db_url, &resource_addr, &token_key, &accesses).await.unwrap();
-            tokio::task::yield_now().await;
-        });
-        wait_server(resource_port);
+        let resource_api_id = Uuid::from_slice(&api_id).unwrap().to_string();
+        let resource_server = TestServer::new(TestServerKind::Resource, Some(&resource_api_id), Some(&password));
+        resource_server.truncate_tables().await.unwrap();
+        resource_server.start_server();
 
         // user and admin login
         let (user_id, user_auth, user_access, _) = 
-            login(&auth_addr_client, USER_NAME, USER_PW).await;
+            login(&auth_server.address, USER_NAME, USER_PW).await;
         let (admin_id, admin_auth, admin_access, _) = 
-            login(&auth_addr_client, ADMIN_NAME, ADMIN_PW).await;
+            login(&auth_server.address, ADMIN_NAME, ADMIN_PW).await;
 
         // construct model service for admin and user
-        let channel = Channel::from_shared(resource_addr_client.clone()).unwrap().connect().await.unwrap();
+        let channel = Channel::from_shared(resource_server.address.clone()).unwrap().connect().await.unwrap();
         let interceptor_user = TokenInterceptor(user_access.to_owned());
         let interceptor_admin = TokenInterceptor(admin_access.to_owned());
         let mut model_service_user = 
@@ -399,8 +370,8 @@ mod tests {
         assert!(try_response.is_ok());
 
         // user and admin logout
-        logout(&auth_addr_client, user_id, &user_auth).await;
-        logout(&auth_addr_client, admin_id, &admin_auth).await;
+        logout(&auth_server.address, user_id, &user_auth).await;
+        logout(&auth_server.address, admin_id, &admin_auth).await;
 
         // remove user links to role and delete user
         for (user_id, role_id) in user_roles.clone() {
@@ -433,7 +404,7 @@ mod tests {
         }
 
         // delete procedures and api
-        for id in role_ids.clone() {
+        for id in proc_ids.clone() {
             let request = Request::new(ProcedureId {
                 id
             });
@@ -445,7 +416,7 @@ mod tests {
         api_service.delete_api(request).await.unwrap();
 
         // root logout
-        logout(&auth_addr_client, root_id, &root_auth).await;
+        logout(&auth_server.address, root_id, &root_auth).await;
 
         // try to read api after logout, should error
         let request = Request::new(ApiId {
@@ -453,6 +424,10 @@ mod tests {
         });
         let try_response = api_service.read_api(request).await;
         assert!(try_response.is_err());
+
+        // stop servers
+        auth_server.stop_server();
+        resource_server.stop_server();
 
         Ok(())
     }
