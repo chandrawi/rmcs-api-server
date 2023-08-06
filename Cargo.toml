@@ -19,10 +19,6 @@ path = "src/test_auth_server.rs"
 name = "test_resource_server"
 path = "src/test_resource_server.rs"
 
-[[bin]]
-name = "test"
-path = "src/test.rs"
-
 [dependencies]
 rmcs-auth-api = { path = "../rmcs-auth-api/rust" }
 rmcs-auth-db = { path = "../rmcs-auth-db" }
@@ -44,7 +40,6 @@ spki = "0.7.2"
 argon2 = "0.5.0"
 jsonwebtoken = { version = "8.3.0", default-features = false }
 async-trait = "0.1.71"
-base64 = "0.21.2"
 clap = { version = "4.3.19", features = ["derive"] }
 
 [dev-dependencies]

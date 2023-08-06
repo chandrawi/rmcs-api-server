@@ -41,4 +41,3 @@ const DELETE_TOKEN_ERR: &str = "error delete token";
 const GENERATE_TOKEN_ERR: &str = "error generate token";
 const TOKEN_MISMATCH: &str = "token is not match";
 const TOKEN_UNVERIFIED: &str = "token unverified";
-const ROOT_DEF_NOT_FOUND: &str = "root user credential not found";

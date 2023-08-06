@@ -19,7 +19,7 @@ mod tests {
     use rmcs_resource_api::model::model_service_client::ModelServiceClient;
     use rmcs_resource_api::model::{ModelSchema, ModelTypes, ModelId};
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
-    use rmcs_api_server::utility::root::{ROOT_NAME, root_data};
+    use rmcs_api_server::utility::root::{ROOT_NAME, ROOT_DATA};
 
     const ACCESSES: &[(&str, &[&str])] = &[
         ("read_model", &["admin", "user"]),
@@ -189,7 +189,7 @@ mod tests {
         auth_server.start_server();
 
         // root login
-        let root = root_data().unwrap();
+        let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
         let (root_id, root_auth, _, _) = 
             login(&auth_server.address, ROOT_NAME, &root.password).await;
 

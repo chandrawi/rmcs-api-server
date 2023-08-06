@@ -5,7 +5,7 @@ pub mod validator;
 use rsa::{RsaPrivateKey, Pkcs1v15Encrypt, RsaPublicKey};
 use pkcs8::{DecodePrivateKey, DecodePublicKey};
 use argon2::{Argon2, PasswordVerifier, password_hash::PasswordHash};
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 use tonic::{Request, Status};
 
 pub fn import_private_key(priv_der: &[u8]) -> Result<RsaPrivateKey, pkcs8::Error>
@@ -35,6 +35,11 @@ pub(crate) fn verify_password(password: &[u8], hash: &str) -> Result<(), argon2:
     let argon2 = Argon2::default();
     let parsed_hash = PasswordHash::new(&hash)?;
     argon2.verify_password(password, &parsed_hash)
+}
+
+pub fn generate_access_key() -> Vec<u8>
+{
+    (0..32).map(|_| thread_rng().gen()).collect()
 }
 
 pub fn interceptor(mut request: Request<()>) -> Result<Request<()>, Status>

@@ -9,11 +9,11 @@ use rmcs_auth_api::auth::{
     UserRefreshRequest, UserRefreshResponse, UserLogoutRequest, UserLogoutResponse,
     ProcedureMap, AccessTokenMap
 };
-use crate::utility::{self, token, root::{root_data, ROOT_ID, ROOT_NAME}};
+use crate::utility::{self, token, root::{ROOT_ID, ROOT_NAME, ROOT_DATA}};
 use super::{
     API_ID_NOT_FOUND, USERNAME_NOT_FOUND, KEY_IMPORT_ERR, DECRYPT_ERR, ENCRYPT_ERR, PASSWORD_MISMATCH,
     TOKEN_NOT_FOUND, CREATE_TOKEN_ERR, UPDATE_TOKEN_ERR, DELETE_TOKEN_ERR,
-    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED, ROOT_DEF_NOT_FOUND
+    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED
 };
 
 pub struct AuthServer {
@@ -78,8 +78,8 @@ impl AuthService for AuthServer {
     {
         let request = request.into_inner();
         let result = if &request.username == ROOT_NAME {
-            root_data().map(|r| r.into())
-                .ok_or(Status::not_found(ROOT_DEF_NOT_FOUND))
+            let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
+            Ok(root.into())
         } else {
             self.auth_db.read_user_by_name(&request.username).await
                 .map_err(|_| Status::not_found(USERNAME_NOT_FOUND))
@@ -99,10 +99,10 @@ impl AuthService for AuthServer {
                 std::net::IpAddr::V6(v) => v.octets().to_vec()
             }).unwrap_or(Vec::new());
         let request = request.into_inner();
-        // Get user schema from root environment variables or database
+        // Get user schema from root data or database
         let result = if &request.username == ROOT_NAME {
-            root_data().map(|r| r.into())
-                .ok_or(Status::not_found(ROOT_DEF_NOT_FOUND))
+            let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
+            Ok(root.into())
         } else {
             self.auth_db.read_user_by_name(&request.username).await
                 .map_err(|_| Status::not_found(USERNAME_NOT_FOUND))
@@ -189,7 +189,7 @@ impl AuthService for AuthServer {
                 if request.api_id != ROOT_ID.as_bytes().to_vec() {
                     return Err(Status::not_found(API_ID_NOT_FOUND));
                 }
-                let root = root_data().ok_or(Status::not_found(API_ID_NOT_FOUND))?;
+                let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
                 let token_claims = token::decode_token(&request.access_token, &root.access_key, false)
                     .map_err(|_| Status::internal("TOKEN_UNVERIFIED root"))?;
                 (root.access_key, token_claims)

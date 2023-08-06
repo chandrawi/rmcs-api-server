@@ -1,7 +1,6 @@
-use std::env;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use uuid::Uuid;
-use base64::{Engine as _, engine::general_purpose};
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use pkcs8::{DecodePrivateKey, EncodePrivateKey};
 use spki::{DecodePublicKey, EncodePublicKey};
@@ -9,12 +8,30 @@ use rmcs_auth_db::schema::auth_user::{UserSchema, UserRoleSchema};
 
 pub const ROOT_ID: Uuid = Uuid::from_u128(0xffffffffffffffffffffffffffffffffu128);
 pub const ROOT_NAME: &str = "root";
+pub static ROOT_DATA: OnceLock<RootData> = OnceLock::new();
 
+const DEF_ROOT_PW: &str = "r0ot_P4s5w0rd";
+const DEF_ACC_DUR: i32 = 300;
+const DEF_REF_DUR: i32 = 3600;
+const DEF_ACC_KEY: [u8; 32] = [0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255];
+
+#[derive(Debug, Clone)]
 pub struct RootData {
     pub password: String,
     pub access_duration: i32,
     pub refresh_duration: i32,
     pub access_key: Vec<u8>
+}
+
+impl Default for RootData {
+    fn default() -> Self {
+        Self {
+            password: String::from(DEF_ROOT_PW),
+            access_duration: DEF_ACC_DUR,
+            refresh_duration: DEF_REF_DUR,
+            access_key: DEF_ACC_KEY.to_vec()
+        }
+    }
 }
 
 impl Into<UserSchema> for RootData {
@@ -26,7 +43,7 @@ impl Into<UserSchema> for RootData {
             phone: String::new(),
             public_key: root_public_key().unwrap_or_default(),
             private_key: root_private_key().unwrap_or_default(),
-            password: self.password,
+            password: String::from(self.password),
             roles: vec![UserRoleSchema {
                 api_id: ROOT_ID,
                 role: ROOT_NAME.to_owned(),
@@ -34,26 +51,10 @@ impl Into<UserSchema> for RootData {
                 ip_lock: true,
                 access_duration: self.access_duration,
                 refresh_duration: self.refresh_duration,
-                access_key: self.access_key
+                access_key: self.access_key.to_vec()
             }]
         }
     }
-}
-
-pub fn root_data() -> Option<RootData>
-{
-    let root_env = PathBuf::from_iter([std::env!("CARGO_MANIFEST_DIR"), "root", ".env"]);
-    dotenvy::from_path(root_env).ok()?;
-    let password = env::var("ROOT_PASSWORD").ok()?;
-    let access_dur = env::var("ROOT_ACCESS_DURATION").ok()?;
-    let refresh_dur = env::var("ROOT_REFRESH_DURATION").ok()?;
-    let access_key = env::var("ROOT_ACCESS_KEY").ok()?;
-    Some(RootData {
-        password,
-        access_duration: access_dur.parse().ok()?,
-        refresh_duration: refresh_dur.parse().ok()?,
-        access_key: general_purpose::URL_SAFE_NO_PAD.decode(access_key).ok()?
-    })
 }
 
 pub fn root_private_key() -> Option<Vec<u8>>

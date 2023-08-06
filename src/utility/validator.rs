@@ -3,7 +3,7 @@ use uuid::Uuid;
 use jsonwebtoken::{decode, DecodingKey, Algorithm, Validation};
 use async_trait::async_trait;
 use super::token::TokenClaims;
-use super::root::{root_data, ROOT_ID, ROOT_NAME};
+use super::root::{ROOT_ID, ROOT_NAME, ROOT_DATA};
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::auth::ProcedureMap;
 
@@ -12,7 +12,6 @@ const TOKEN_EXPIRED: &str = "Token is broken or expired";
 const PROC_NOT_FOUND: &str = "Procedure access not found";
 const USER_UNREGISTERED: &str = "user has not registered";
 const ACCESS_RIGHT_ERR: &str = "doesn't has access rights";
-const ROOT_DATA_ERR: &str = "root data error";
 
 #[derive(Debug, Clone)]
 pub struct AccessSchema {
@@ -62,7 +61,7 @@ pub trait AccessValidator {
         let claims = match decoded {
             Ok(value) => value.claims,
             Err(_) => {
-                let root = root_data().ok_or(Status::unauthenticated(ROOT_DATA_ERR))?;
+                let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
                 let decoding_key = DecodingKey::from_secret(&root.access_key);
                 decode::<TokenClaims>(token, &decoding_key, &validation)
                     .map_err(|_| Status::unauthenticated(TOKEN_EXPIRED))?
