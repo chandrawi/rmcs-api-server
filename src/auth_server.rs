@@ -12,7 +12,7 @@ use rmcs_api_server::auth::token::TokenServer;
 use rmcs_api_server::auth::auth::AuthServer;
 use rmcs_api_server::utility::{interceptor, generate_access_key};
 use rmcs_api_server::utility::validator::AuthValidator;
-use rmcs_api_server::utility::root::{ROOT_DATA, RootData};
+use rmcs_api_server::utility::config::{ROOT_DATA, RootData};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

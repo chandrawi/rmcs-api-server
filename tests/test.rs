@@ -19,7 +19,7 @@ mod tests {
     use rmcs_resource_api::model::model_service_client::ModelServiceClient;
     use rmcs_resource_api::model::{ModelSchema, ModelTypes, ModelId};
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
-    use rmcs_api_server::utility::root::{ROOT_NAME, ROOT_DATA};
+    use rmcs_api_server::utility::config::{ROOT_NAME, ROOT_DATA};
 
     const ACCESSES: &[(&str, &[&str])] = &[
         ("read_model", &["admin", "user"]),
@@ -152,9 +152,7 @@ mod tests {
     async fn login(address: &str, username: &str, password: &str) -> (Uuid, String, String, String) {
         let channel = Channel::from_shared(address.to_owned()).unwrap().connect().await.unwrap();
         let mut client = AuthServiceClient::new(channel);
-        let request = Request::new(UserKeyRequest {
-            username: username.to_owned()
-        });
+        let request = Request::new(UserKeyRequest { });
         // get transport public key of requested user and encrypt the password
         let response = client.user_login_key(request).await.unwrap().into_inner();
         let pub_key = import_public_key(response.public_key.as_slice()).unwrap();
@@ -211,7 +209,6 @@ mod tests {
             address: String::new(),
             category: String::from("resource"),
             description: String::new(),
-            public_key: Vec::new(),
             password: password.clone(),
             access_key: Vec::new(),
             procedures: Vec::new()
@@ -284,7 +281,6 @@ mod tests {
                 name: user.to_owned(),
                 email: String::new(),
                 phone: String::new(),
-                public_key: Vec::new(),
                 password: password.to_owned(),
                 roles: Vec::new()
             });

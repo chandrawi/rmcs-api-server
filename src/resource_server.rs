@@ -16,7 +16,7 @@ use rmcs_api_server::resource::slice::SliceServer;
 use rmcs_api_server::resource::log::LogServer;
 use rmcs_api_server::utility::{interceptor, generate_access_key};
 use rmcs_api_server::utility::validator::{AccessValidator, AccessSchema};
-use rmcs_api_server::utility::root::{ROOT_DATA, RootData};
+use rmcs_api_server::utility::config::{ROOT_DATA, RootData};
 use rmcs_api_client::Auth;
 
 #[tokio::main]

@@ -97,8 +97,7 @@ impl UserService for UserServer {
             request.name.as_deref(),
             request.email.as_deref(),
             request.phone.as_deref(),
-            request.password.as_deref(),
-            if request.update_key { Some(()) } else { None }
+            request.password.as_deref()
         ).await;
         match result {
             Ok(_) => (),

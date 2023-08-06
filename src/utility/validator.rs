@@ -3,7 +3,7 @@ use uuid::Uuid;
 use jsonwebtoken::{decode, DecodingKey, Algorithm, Validation};
 use async_trait::async_trait;
 use super::token::TokenClaims;
-use super::root::{ROOT_ID, ROOT_NAME, ROOT_DATA};
+use super::config::{ROOT_ID, ROOT_NAME, ROOT_DATA};
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::auth::ProcedureMap;
 

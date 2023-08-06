@@ -1,14 +1,15 @@
-use std::path::PathBuf;
 use std::sync::OnceLock;
 use uuid::Uuid;
-use rsa::{RsaPrivateKey, RsaPublicKey};
-use pkcs8::{DecodePrivateKey, EncodePrivateKey};
-use spki::{DecodePublicKey, EncodePublicKey};
+use rsa::RsaPrivateKey;
+use super::{generate_transport_keys, export_public_key};
 use rmcs_auth_db::schema::auth_user::{UserSchema, UserRoleSchema};
 
 pub const ROOT_ID: Uuid = Uuid::from_u128(0xffffffffffffffffffffffffffffffffu128);
 pub const ROOT_NAME: &str = "root";
 pub static ROOT_DATA: OnceLock<RootData> = OnceLock::new();
+
+pub static API_KEY: OnceLock<TransportKey> = OnceLock::new();
+pub static USER_KEY: OnceLock<TransportKey> = OnceLock::new();
 
 const DEF_ROOT_PW: &str = "r0ot_P4s5w0rd";
 const DEF_ACC_DUR: i32 = 300;
@@ -41,8 +42,6 @@ impl Into<UserSchema> for RootData {
             name: ROOT_NAME.to_owned(),
             email: String::new(),
             phone: String::new(),
-            public_key: root_public_key().unwrap_or_default(),
-            private_key: root_private_key().unwrap_or_default(),
             password: String::from(self.password),
             roles: vec![UserRoleSchema {
                 api_id: ROOT_ID,
@@ -57,23 +56,18 @@ impl Into<UserSchema> for RootData {
     }
 }
 
-pub fn root_private_key() -> Option<Vec<u8>>
-{
-    let root_priv = PathBuf::from_iter([std::env!("CARGO_MANIFEST_DIR"), "root", "private.pem"]);
-    let priv_pem = std::fs::read_to_string(root_priv).ok()?;
-    let priv_der = RsaPrivateKey::from_pkcs8_pem(&priv_pem).ok()?
-        .to_pkcs8_der().ok()?
-        .to_bytes()
-        .to_vec();
-    Some(priv_der)
+pub struct TransportKey {
+    pub(crate) private_key: RsaPrivateKey,
+    pub(crate) public_der: Vec<u8>
 }
 
-pub(crate) fn root_public_key() -> Option<Vec<u8>>
-{
-    let root_priv = PathBuf::from_iter([std::env!("CARGO_MANIFEST_DIR"), "root", "public.pem"]);
-    let pub_pem = std::fs::read_to_string(root_priv).ok()?;
-    let pub_der = RsaPublicKey::from_public_key_pem(&pub_pem).ok()?
-        .to_public_key_der().ok()?
-        .to_vec();
-    Some(pub_der)
+impl TransportKey {
+    pub fn new() -> Self {
+        let (private_key, public_key) = generate_transport_keys().unwrap();
+        let public_der = export_public_key(public_key).unwrap();
+        Self {
+            private_key,
+            public_der
+        }
+    }
 }

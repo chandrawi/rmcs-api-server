@@ -9,7 +9,7 @@ use rmcs_auth_api::auth::{
     UserRefreshRequest, UserRefreshResponse, UserLogoutRequest, UserLogoutResponse,
     ProcedureMap, AccessTokenMap
 };
-use crate::utility::{self, token, root::{ROOT_ID, ROOT_NAME, ROOT_DATA}};
+use crate::utility::{self, token, config::{ROOT_ID, ROOT_NAME, ROOT_DATA, API_KEY, USER_KEY, TransportKey}};
 use super::{
     API_ID_NOT_FOUND, USERNAME_NOT_FOUND, KEY_IMPORT_ERR, DECRYPT_ERR, ENCRYPT_ERR, PASSWORD_MISMATCH,
     TOKEN_NOT_FOUND, CREATE_TOKEN_ERR, UPDATE_TOKEN_ERR, DELETE_TOKEN_ERR,
@@ -31,15 +31,11 @@ impl AuthServer {
 #[tonic::async_trait]
 impl AuthService for AuthServer {
 
-    async fn api_login_key(&self, request: Request<ApiKeyRequest>)
+    async fn api_login_key(&self, _: Request<ApiKeyRequest>)
         -> Result<Response<ApiKeyResponse>, Status>
     {
-        let request = request.into_inner();
-        let result = self.auth_db.read_api(Uuid::from_slice(&request.api_id).unwrap_or_default()).await;
-        let public_key = match result {
-            Ok(api) => api.public_key,
-            Err(_) => return Err(Status::not_found(API_ID_NOT_FOUND))
-        };
+        let api_key = API_KEY.get_or_init(|| TransportKey::new());
+        let public_key = api_key.public_der.clone();
         Ok(Response::new(ApiKeyResponse { public_key }))
     }
 
@@ -51,10 +47,9 @@ impl AuthService for AuthServer {
         let (access_key, access_procedures) = match result {
             Ok(api) => {
                 // decrypt encrypted password hash and return error if password is not verified
-                let priv_der = api.private_key.clone();
+                let api_key = API_KEY.get_or_init(|| TransportKey::new());
+                let priv_key = api_key.private_key.clone();
                 let hash = api.password.clone();
-                let priv_key = utility::import_private_key(&priv_der)
-                    .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
                 let password = utility::decrypt_message(&request.password, priv_key)
                     .map_err(|_| Status::internal(DECRYPT_ERR))?;
                 utility::verify_password(&password, &hash)
@@ -73,21 +68,11 @@ impl AuthService for AuthServer {
         Ok(Response::new(ApiLoginResponse { access_key, access_procedures }))
     }
 
-    async fn user_login_key(&self, request: Request<UserKeyRequest>)
+    async fn user_login_key(&self, _: Request<UserKeyRequest>)
         -> Result<Response<UserKeyResponse>, Status>
     {
-        let request = request.into_inner();
-        let result = if &request.username == ROOT_NAME {
-            let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
-            Ok(root.into())
-        } else {
-            self.auth_db.read_user_by_name(&request.username).await
-                .map_err(|_| Status::not_found(USERNAME_NOT_FOUND))
-        };
-        let public_key = match result {
-            Ok(user) => user.public_key,
-            Err(e) => return Err(e)
-        };
+        let user_key = USER_KEY.get_or_init(|| TransportKey::new());
+        let public_key = user_key.public_der.clone();
         Ok(Response::new(UserKeyResponse { public_key }))
     }
 
@@ -110,10 +95,9 @@ impl AuthService for AuthServer {
         let (user_id, auth_token, access_tokens) = match result {
             Ok(user) => {
                 // decrypt encrypted password hash and return error if password is not verified
-                let priv_der = user.private_key.clone();
+                let user_key = USER_KEY.get_or_init(|| TransportKey::new());
+                let priv_key = user_key.private_key.clone();
                 let hash = user.password.clone();
-                let priv_key = utility::import_private_key(&priv_der)
-                    .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
                 let password = utility::decrypt_message(&request.password, priv_key)
                     .map_err(|_| Status::internal(DECRYPT_ERR))?;
                 if user.name == ROOT_NAME {
