@@ -3,6 +3,7 @@ use uuid::Uuid;
 use rsa::RsaPrivateKey;
 use super::{generate_transport_keys, export_public_key};
 use rmcs_auth_db::schema::auth_user::{UserSchema, UserRoleSchema};
+use rmcs_auth_db::utility::generate_access_key;
 
 pub const ROOT_ID: Uuid = Uuid::from_u128(0xffffffffffffffffffffffffffffffffu128);
 pub const ROOT_NAME: &str = "root";
@@ -31,6 +32,17 @@ impl Default for RootData {
             access_duration: DEF_ACC_DUR,
             refresh_duration: DEF_REF_DUR,
             access_key: DEF_ACC_KEY.to_vec()
+        }
+    }
+}
+
+impl RootData {
+    pub fn new(password: &str, access_duration: i32, refresh_duration: i32) -> Self {
+        Self {
+            password: String::from(password),
+            access_duration,
+            refresh_duration,
+            access_key: generate_access_key()
         }
     }
 }

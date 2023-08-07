@@ -80,7 +80,8 @@ impl ApiService for ApiServer {
             &request.address,
             &request.category,
             &request.description,
-            &request.password
+            &request.password,
+            &request.access_key
         ).await;
         let id = match result {
             Ok(value) => value,
@@ -101,7 +102,7 @@ impl ApiService for ApiServer {
             request.category.as_deref(),
             request.description.as_deref(),
             request.password.as_deref(),
-            if request.update_key { Some(()) } else { None }
+            request.access_key.as_deref()
         ).await;
         match result {
             Ok(_) => (),

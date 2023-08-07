@@ -14,7 +14,7 @@ use rmcs_api_server::resource::data::DataServer;
 use rmcs_api_server::resource::buffer::BufferServer;
 use rmcs_api_server::resource::slice::SliceServer;
 use rmcs_api_server::resource::log::LogServer;
-use rmcs_api_server::utility::{interceptor, generate_access_key};
+use rmcs_api_server::utility::interceptor;
 use rmcs_api_server::utility::validator::{AccessValidator, AccessSchema};
 use rmcs_api_server::utility::config::{ROOT_DATA, RootData};
 use rmcs_api_client::Auth;
@@ -32,10 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root_ad = std::env::var("ROOT_ACCESS_DURATION");
     let root_rd = std::env::var("ROOT_REFRESH_DURATION");
     if let (Ok(password), Ok(access_duration), Ok(refresh_duration)) = (root_pw, root_ad, root_rd) {
-        let access_duration = access_duration.parse().unwrap();
-        let refresh_duration = refresh_duration.parse().unwrap();
-        let access_key = generate_access_key();
-        ROOT_DATA.set(RootData { password, access_duration, refresh_duration, access_key }).unwrap();
+        ROOT_DATA.set(RootData::new(&password, access_duration.parse()?, refresh_duration.parse()?)).unwrap();
     }
 
     let auth = Auth::new(&auth_addr).await;

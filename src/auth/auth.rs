@@ -2,6 +2,7 @@ use tonic::{Request, Response, Status};
 use uuid::Uuid;
 use chrono::{Duration, Utc};
 use rmcs_auth_db::Auth;
+use rmcs_auth_db::utility::generate_access_key;
 use rmcs_auth_api::auth::auth_service_server::AuthService;
 use rmcs_auth_api::auth::{
     ApiKeyRequest, ApiKeyResponse, ApiLoginRequest, ApiLoginResponse,
@@ -13,7 +14,7 @@ use crate::utility::{self, token, config::{ROOT_ID, ROOT_NAME, ROOT_DATA, API_KE
 use super::{
     API_ID_NOT_FOUND, USERNAME_NOT_FOUND, KEY_IMPORT_ERR, DECRYPT_ERR, ENCRYPT_ERR, PASSWORD_MISMATCH,
     TOKEN_NOT_FOUND, CREATE_TOKEN_ERR, UPDATE_TOKEN_ERR, DELETE_TOKEN_ERR,
-    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED
+    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED, API_UPDATE_ERR
 };
 
 pub struct AuthServer {
@@ -43,7 +44,8 @@ impl AuthService for AuthServer {
         -> Result<Response<ApiLoginResponse>, Status>
     {
         let request = request.into_inner();
-        let result = self.auth_db.read_api(Uuid::from_slice(&request.api_id).unwrap_or_default()).await;
+        let id = Uuid::from_slice(&request.api_id).unwrap_or_default();
+        let result = self.auth_db.read_api(id).await;
         let (access_key, access_procedures) = match result {
             Ok(api) => {
                 // decrypt encrypted password hash and return error if password is not verified
@@ -56,12 +58,16 @@ impl AuthService for AuthServer {
                     .map_err(|_| Status::invalid_argument(PASSWORD_MISMATCH))?;
                 let pub_key = utility::import_public_key(&request.public_key)
                     .map_err(|_| Status::internal(KEY_IMPORT_ERR))?;
-                let access_keys = utility::encrypt_message(&api.access_key, pub_key)
+                // update api with generated access key
+                let key = generate_access_key();
+                self.auth_db.update_api(id, None, None, None, None, None, Some(&key)).await
+                    .map_err(|_| Status::internal(API_UPDATE_ERR))?;
+                let access_key = utility::encrypt_message(&key, pub_key)
                     .map_err(|_| Status::internal(ENCRYPT_ERR))?;
                 let procedures = api.procedures.into_iter()
                     .map(|e| ProcedureMap { procedure: e.name, roles: e.roles })
                     .collect();
-                (access_keys, procedures)
+                (access_key, procedures)
             },
             Err(_) => return Err(Status::not_found(API_ID_NOT_FOUND))
         };
