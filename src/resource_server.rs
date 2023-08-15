@@ -1,4 +1,5 @@
 use rmcs_resource_db::Resource;
+use rmcs_resource_db::utility::migrate;
 use rmcs_resource_api::model::model_service_server::ModelServiceServer;
 use rmcs_resource_api::device::device_service_server::DeviceServiceServer;
 use rmcs_resource_api::group::group_service_server::GroupServiceServer;
@@ -45,6 +46,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
 
     let resource_db = Resource::new_with_url(&url).await;
+    migrate(&resource_db.pool).await.unwrap();
+
     let model_server = ModelServer::new(resource_db.clone())
         .with_validator(&token_key, &accesses);
     let device_server = DeviceServer::new(resource_db.clone())

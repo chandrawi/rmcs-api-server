@@ -1,4 +1,5 @@
 use rmcs_auth_db::Auth;
+use rmcs_auth_db::utility::migrate;
 use rmcs_auth_api::api::api_service_server::ApiServiceServer;
 use rmcs_auth_api::role::role_service_server::RoleServiceServer;
 use rmcs_auth_api::user::user_service_server::UserServiceServer;
@@ -28,6 +29,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let auth_db = Auth::new_with_url(&url).await;
+    migrate(&auth_db.pool).await.unwrap();
+
     let api_server = ApiServer::new(auth_db.clone()).with_validator();
     let role_server = RoleServer::new(auth_db.clone()).with_validator();
     let user_server = UserServer::new(auth_db.clone()).with_validator();
