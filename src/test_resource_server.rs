@@ -43,15 +43,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let db_url = match args.db_url {
         Some(value) => value,
-        None => std::env::var("DATABASE_RESOURCE_TEST_URL").unwrap()
+        None => std::env::var("DATABASE_URL_RESOURCE_TEST").unwrap()
     };
     let address = match args.address {
         Some(value) => value,
-        None => std::env::var("ADDRESS_RESOURCE").unwrap()
+        None => std::env::var("BIND_ADDRESS_RESOURCE").unwrap()
     };
     let auth_address = match args.auth_address {
         Some(value) => value,
-        None => String::from("http://") + std::env::var("ADDRESS_AUTH").unwrap().as_str()
+        None => std::env::var("SERVER_ADDRESS_AUTH").unwrap()
     };
     let api_id = match args.api_id {
         Some(value) => value,

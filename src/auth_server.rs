@@ -18,8 +18,8 @@ use rmcs_api_server::utility::config::{ROOT_DATA, RootData};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let url = std::env::var("DATABASE_AUTH_URL").unwrap();
-    let addr = std::env::var("ADDRESS_AUTH").unwrap().parse()?;
+    let url = std::env::var("DATABASE_URL_AUTH").unwrap();
+    let addr = std::env::var("BIND_ADDRESS_AUTH").unwrap().parse()?;
 
     let root_pw = std::env::var("ROOT_PASSWORD");
     let root_ad = std::env::var("ROOT_ACCESS_DURATION");

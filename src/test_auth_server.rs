@@ -31,11 +31,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let db_url = match args.db_url {
         Some(value) => value,
-        None => std::env::var("DATABASE_AUTH_TEST_URL").unwrap()
+        None => std::env::var("DATABASE_URL_AUTH_TEST").unwrap()
     };
     let address = match args.address {
         Some(value) => value,
-        None => std::env::var("ADDRESS_AUTH").unwrap()
+        None => std::env::var("BIND_ADDRESS_AUTH").unwrap()
     };
 
     if args.secured {

@@ -23,9 +23,9 @@ use rmcs_api_client::Auth;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let url = std::env::var("DATABASE_RESOURCE_URL").unwrap();
-    let addr = std::env::var("ADDRESS_RESOURCE").unwrap().parse()?;
-    let auth_addr = String::from("http://") + std::env::var("ADDRESS_AUTH").unwrap().as_str();
+    let url = std::env::var("DATABASE_URL_RESOURCE").unwrap();
+    let addr = std::env::var("BIND_ADDRESS_RESOURCE").unwrap().parse()?;
+    let auth_addr = std::env::var("SERVER_ADDRESS_AUTH").unwrap();
     let api_id = std::env::var("API_ID").unwrap().parse()?;
     let password = std::env::var("API_PASSWORD").unwrap();
 

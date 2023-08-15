@@ -59,11 +59,11 @@ mod tests {
         {
             dotenvy::dotenv().ok();
             let (env_db, env_addr, bin_name) = match kind {
-                TestServerKind::Auth => ("DATABASE_AUTH_TEST_URL", "ADDRESS_AUTH", "test_auth_server"),
-                TestServerKind::Resource => ("DATABASE_RESOURCE_TEST_URL", "ADDRESS_RESOURCE", "test_resource_server")
+                TestServerKind::Auth => ("DATABASE_URL_AUTH_TEST", "SERVER_ADDRESS_AUTH", "test_auth_server"),
+                TestServerKind::Resource => ("DATABASE_URL_RESOURCE_TEST", "SERVER_ADDRESS_RESOURCE", "test_resource_server")
             };
             let db_url = env::var(env_db).unwrap();
-            let address = String::from("http://") +  env::var(env_addr).unwrap().as_str();
+            let address = env::var(env_addr).unwrap();
             let bin_name = String::from(bin_name);
             let api_cred = match (api_id, password) {
                 (Some(id), Some(pw)) => Some((String::from(id), String::from(pw))),
