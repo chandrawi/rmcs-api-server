@@ -1,12 +1,7 @@
 #[allow(dead_code)]
 #[cfg(test)]
 mod tests {
-    use std::env;
-    use tonic::{Request, Status, transport::Channel, service::Interceptor, metadata::MetadataValue};
-    use std::process::{Command, Stdio};
-    use std::time::{SystemTime, Duration};
-    use sqlx::Error;
-    use sqlx::postgres::PgPoolOptions;
+    use tonic::{Request, transport::Channel};
     use uuid::Uuid;
     use rmcs_auth_api::api::api_service_client::ApiServiceClient;
     use rmcs_auth_api::api::{ApiSchema, ProcedureSchema, ApiId, ProcedureId};
@@ -20,6 +15,8 @@ mod tests {
     use rmcs_resource_api::model::{ModelSchema, ModelTypes, ModelId};
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
     use rmcs_api_server::utility::config::{ROOT_NAME, ROOT_DATA};
+    use rmcs_api_client::utility::TokenInterceptor;
+    use rmcs_api_client::utility::test::{TestServerKind, TestServer};
 
     const ACCESSES: &[(&str, &[&str])] = &[
         ("read_model", &["admin", "user"]),
@@ -40,114 +37,6 @@ mod tests {
         (ADMIN_NAME, ADMIN_PW, "admin"),
         (USER_NAME, USER_PW, "user")
     ];
-
-    enum TestServerKind {
-        Auth,
-        Resource
-    }
-
-    struct TestServer {
-        kind: TestServerKind,
-        db_url: String,
-        address: String,
-        bin_name: String,
-        api_cred: Option<(String, String)>
-    }
-
-    impl TestServer {
-        fn new(kind: TestServerKind, api_id: Option<&str>, password: Option<&str>) -> TestServer
-        {
-            dotenvy::dotenv().ok();
-            let (env_db, env_addr, bin_name) = match kind {
-                TestServerKind::Auth => ("DATABASE_URL_AUTH_TEST", "SERVER_ADDRESS_AUTH", "test_auth_server"),
-                TestServerKind::Resource => ("DATABASE_URL_RESOURCE_TEST", "SERVER_ADDRESS_RESOURCE", "test_resource_server")
-            };
-            let db_url = env::var(env_db).unwrap();
-            let address = env::var(env_addr).unwrap();
-            let bin_name = String::from(bin_name);
-            let api_cred = match (api_id, password) {
-                (Some(id), Some(pw)) => Some((String::from(id), String::from(pw))),
-                _ => None
-            };
-            TestServer { kind, db_url, address, bin_name, api_cred }
-        }
-        async fn truncate_tables(&self) -> Result<(), Error>
-        {
-            let pool = PgPoolOptions::new().connect(self.db_url.as_str()).await?;
-            let sql = match self.kind {
-                TestServerKind::Auth => "TRUNCATE TABLE \"token\", \"user_role\", \"user\", \"role_access\", \"role\", \"api_procedure\", \"api\";",
-                TestServerKind::Resource => "TRUNCATE TABLE \"system_log\", \"data_slice\", \"data_buffer\", \"data\", \"group_model_map\", \"group_device_map\", \"group_model\", \"group_device\", \"device_config\", \"device\", \"device_type_model\", \"device_type\", \"model_config\", \"model_type\", \"model\";"
-            };
-            sqlx::query(sql)
-                .execute(&pool)
-                .await?;
-            Ok(())
-        }
-        fn start_server(&self)
-        {
-            // start server using cargo run command
-            let args: Vec<&str> = match &self.api_cred {
-                Some((id, pw)) => vec![
-                    "run", "-p", "rmcs-api-server", "--bin", self.bin_name.as_str(),
-                    "--", "--db-url", self.db_url.as_str(), "--secured",
-                    "--api-id", id.as_str(), "--password", pw.as_str()
-                ],
-                None => vec![
-                    "run", "-p", "rmcs-api-server", "--bin", self.bin_name.as_str(),
-                    "--", "--db-url", self.db_url.as_str(), "--secured"
-                ]
-            };
-            Command::new("cargo")
-                .args(args)
-                .spawn()
-                .expect("running auth server failed");
-            // wait until server process is running
-            let port = String::from(":") + self.address.split(":").into_iter().last().unwrap();
-            let mut count = 0;
-            let time_limit = SystemTime::now() + Duration::from_secs(30);
-            while SystemTime::now() < time_limit && count == 0 {
-                let ss_child = Command::new("ss")
-                    .arg("-tulpn")
-                    .stdout(Stdio::piped())
-                    .spawn()
-                    .unwrap();
-                let grep_child = Command::new("grep")
-                    .args([port.as_str(), "-c"])
-                    .stdin(Stdio::from(ss_child.stdout.unwrap()))
-                    .stdout(Stdio::piped())
-                    .spawn()
-                    .unwrap();
-                let output = grep_child.wait_with_output().unwrap();
-                count = String::from_utf8(output.stdout)
-                    .unwrap()
-                    .replace("\n", "")
-                    .parse()
-                    .unwrap_or(0);
-                std::thread::sleep(Duration::from_millis(10));
-            }
-        }
-        fn stop_server(&self)
-        {
-            // stop server service
-            Command::new("killall")
-                .args([self.bin_name.as_str()])
-                .spawn()
-                .expect("stopping auth server failed");
-        }
-    }
-
-    #[derive(Clone)]
-    pub(crate) struct TokenInterceptor(pub(crate) String);
-    
-    impl Interceptor for TokenInterceptor {
-        fn call(&mut self, mut request: Request<()>) -> Result<Request<()>, Status> {
-            request.metadata_mut().insert(
-                "authorization", 
-                MetadataValue::try_from(String::from("Bearer ") + &self.0).unwrap()
-            );
-            Ok(request)
-        }
-    }
 
     async fn login(address: &str, username: &str, password: &str) -> (Uuid, String, String, String) {
         let channel = Channel::from_shared(address.to_owned()).unwrap().connect().await.unwrap();
@@ -182,7 +71,7 @@ mod tests {
     async fn test_auth() -> Result<(), Box<dyn std::error::Error>>
     {
         // start auth server and wait until server process is running
-        let auth_server = TestServer::new(TestServerKind::Auth, None, None);
+        let auth_server = TestServer::new_secured(TestServerKind::Auth, None, None);
         auth_server.truncate_tables().await.unwrap();
         auth_server.start_server();
 
@@ -304,7 +193,7 @@ mod tests {
 
         // start resource server and wait until server process is running
         let resource_api_id = Uuid::from_slice(&api_id).unwrap().to_string();
-        let resource_server = TestServer::new(TestServerKind::Resource, Some(&resource_api_id), Some(&password));
+        let resource_server = TestServer::new_secured(TestServerKind::Resource, Some(&resource_api_id), Some(&password));
         resource_server.truncate_tables().await.unwrap();
         resource_server.start_server();
 
