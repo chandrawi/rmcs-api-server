@@ -25,7 +25,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root_ad = std::env::var("ROOT_ACCESS_DURATION");
     let root_rd = std::env::var("ROOT_REFRESH_DURATION");
     if let (Ok(password), Ok(access_duration), Ok(refresh_duration)) = (root_pw, root_ad, root_rd) {
-        ROOT_DATA.set(RootData::new(&password, access_duration.parse()?, refresh_duration.parse()?)).unwrap();
+        ROOT_DATA.set(RootData::new(
+            &password, 
+            access_duration.parse()?, 
+            refresh_duration.parse()?
+        )).unwrap();
     }
 
     let auth_db = Auth::new_with_url(&url).await;

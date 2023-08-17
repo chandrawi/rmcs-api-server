@@ -46,7 +46,7 @@ impl AuthService for AuthServer {
         let request = request.into_inner();
         let id = Uuid::from_slice(&request.api_id).unwrap_or_default();
         let result = self.auth_db.read_api(id).await;
-        let (access_key, access_procedures) = match result {
+        let (root_key, access_key, access_procedures) = match result {
             Ok(api) => {
                 // decrypt encrypted password hash and return error if password is not verified
                 let api_key = API_KEY.get_or_init(|| TransportKey::new());
@@ -62,16 +62,19 @@ impl AuthService for AuthServer {
                 let key = generate_access_key();
                 self.auth_db.update_api(id, None, None, None, None, None, Some(&key)).await
                     .map_err(|_| Status::internal(API_UPDATE_ERR))?;
+                let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
+                let root_key = utility::encrypt_message(&root.access_key, pub_key.clone())
+                    .map_err(|_| Status::internal(ENCRYPT_ERR))?;
                 let access_key = utility::encrypt_message(&key, pub_key)
                     .map_err(|_| Status::internal(ENCRYPT_ERR))?;
                 let procedures = api.procedures.into_iter()
                     .map(|e| ProcedureMap { procedure: e.name, roles: e.roles })
                     .collect();
-                (access_key, procedures)
+                (root_key, access_key, procedures)
             },
             Err(_) => return Err(Status::not_found(API_ID_NOT_FOUND))
         };
-        Ok(Response::new(ApiLoginResponse { access_key, access_procedures }))
+        Ok(Response::new(ApiLoginResponse { root_key, access_key, access_procedures }))
     }
 
     async fn user_login_key(&self, _: Request<UserKeyRequest>)

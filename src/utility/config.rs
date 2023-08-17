@@ -45,6 +45,14 @@ impl RootData {
             access_key: generate_access_key()
         }
     }
+    pub fn new_with_key(password: &str, access_duration: i32, refresh_duration: i32, root_key: &[u8]) -> Self {
+        Self {
+            password: String::from(password),
+            access_duration,
+            refresh_duration,
+            access_key: root_key.to_vec()
+        }
+    }
 }
 
 impl Into<UserSchema> for RootData {
