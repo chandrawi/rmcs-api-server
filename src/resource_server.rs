@@ -26,6 +26,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let url = std::env::var("DATABASE_URL_RESOURCE").unwrap();
     let addr = std::env::var("BIND_ADDRESS_RESOURCE").unwrap().parse()?;
     let auth_addr = std::env::var("SERVER_ADDRESS_AUTH").unwrap();
+    let scheme = auth_addr.split(":").next().unwrap();
+    let auth_addr = 
+        if vec!["http", "https"].contains(&scheme) { auth_addr } 
+        else { String::from("http://") + auth_addr.as_str() };
     let api_id = std::env::var("API_ID").unwrap().parse()?;
     let password = std::env::var("API_PASSWORD").unwrap();
 
