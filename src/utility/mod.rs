@@ -1,12 +1,13 @@
 pub(crate) mod token;
 pub mod config;
 pub mod validator;
+pub mod interceptor;
+pub mod auth;
 
 use rsa::{RsaPrivateKey, Pkcs1v15Encrypt, RsaPublicKey};
 use pkcs8::{DecodePublicKey, EncodePublicKey};
 use argon2::{Argon2, PasswordVerifier, password_hash::PasswordHash};
 use rand::thread_rng;
-use tonic::{Request, Status};
 
 pub fn generate_transport_keys() -> Result<(RsaPrivateKey, RsaPublicKey), rsa::Error>
 {
@@ -44,21 +45,4 @@ pub(crate) fn verify_password(password: &[u8], hash: &str) -> Result<(), argon2:
     let argon2 = Argon2::default();
     let parsed_hash = PasswordHash::new(&hash)?;
     argon2.verify_password(password, &parsed_hash)
-}
-
-pub fn interceptor(mut request: Request<()>) -> Result<Request<()>, Status>
-{
-    let token = match request.metadata().get("authorization") {
-        Some(value) => match value.to_str() {
-            Ok(v) => v,
-            Err(e) => return Err(Status::unauthenticated(format!("{}", e)))
-        },
-        None => return Err(Status::unauthenticated("Token not found"))
-    };
-    let token = match token.strip_prefix("Bearer ") {
-        Some(value) => value.to_owned(),
-        None => return Err(Status::unauthenticated("authorization header must in format 'Bearer <TOKEN>'"))
-    };
-    request.extensions_mut().insert(token);
-    Ok(request)
 }

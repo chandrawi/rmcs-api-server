@@ -14,9 +14,9 @@ use rmcs_api_server::resource::data::DataServer;
 use rmcs_api_server::resource::buffer::BufferServer;
 use rmcs_api_server::resource::slice::SliceServer;
 use rmcs_api_server::resource::log::LogServer;
-use rmcs_api_server::utility::interceptor;
+use rmcs_api_server::utility::interceptor::interceptor;
 use rmcs_api_server::utility::validator::{AccessValidator, AccessSchema};
-use rmcs_api_client::Auth;
+use rmcs_api_server::utility::auth::api_login;
 use uuid::Uuid;
 use clap::Parser;
 
@@ -116,8 +116,7 @@ async fn resource_server_secured(db_url: String, address: String, auth_address: 
     let addr = address.parse()?;
     let api_id = Uuid::try_parse(&api_id).unwrap();
 
-    let auth = Auth::new(&auth_address).await;
-    let response = auth.api_login(api_id, &password).await
+    let response = api_login(&auth_address, api_id, &password).await
         .expect("Failed to get api definition from Auth server");
     let token_key = response.access_key;
     let accesses: Vec<AccessSchema> = response.access_procedures

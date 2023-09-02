@@ -10,7 +10,7 @@ use rmcs_api_server::auth::role::RoleServer;
 use rmcs_api_server::auth::user::UserServer;
 use rmcs_api_server::auth::token::TokenServer;
 use rmcs_api_server::auth::auth::AuthServer;
-use rmcs_api_server::utility::interceptor;
+use rmcs_api_server::utility::interceptor::interceptor;
 use rmcs_api_server::utility::validator::AuthValidator;
 use clap::Parser;
 
