@@ -1,5 +1,5 @@
 use tonic::{Request, Response, Status};
-use chrono::NaiveDateTime;
+use chrono::{Utc, TimeZone};
 use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::token::token_service_server::TokenService;
@@ -77,7 +77,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.create_access_token(
             Uuid::from_slice(&request.user_id).unwrap_or_default(),
             &request.auth_token,
-            NaiveDateTime::from_timestamp_micros(request.expire).unwrap_or_default(),
+            Utc.timestamp_nanos(request.expire * 1000),
             request.ip.as_slice()
         ).await;
         let (access_id, refresh_token, auth_token) = match result {
@@ -94,7 +94,7 @@ impl TokenService for TokenServer {
         let request = request.into_inner();
         let result = self.auth_db.create_auth_token(
             Uuid::from_slice(&request.user_id).unwrap_or_default(),
-            NaiveDateTime::from_timestamp_micros(request.expire).unwrap_or_default(),
+            Utc.timestamp_nanos(request.expire * 1000),
             request.ip.as_slice(),
             request.number
         ).await;
@@ -117,7 +117,7 @@ impl TokenService for TokenServer {
         let request = request.into_inner();
         let result = self.auth_db.update_access_token(
             request.access_id.unwrap_or_default(),
-            request.expire.map(|s| NaiveDateTime::from_timestamp_micros(s).unwrap_or_default()),
+            request.expire.map(|s| Utc.timestamp_nanos(s * 1000)),
             request.ip.as_deref()
         ).await;
         let (refresh_token, auth_token) = match result {
@@ -134,7 +134,7 @@ impl TokenService for TokenServer {
         let request = request.into_inner();
         let result = self.auth_db.update_auth_token(
             request.auth_token.unwrap_or_default().as_ref(),
-            request.expire.map(|s| NaiveDateTime::from_timestamp_micros(s).unwrap_or_default()),
+            request.expire.map(|s| Utc.timestamp_nanos(s * 1000)),
             request.ip.as_deref()
         ).await;
         let (refresh_token, auth_token) = match result {

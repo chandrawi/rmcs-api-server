@@ -1,5 +1,5 @@
 use tonic::{Request, Response, Status};
-use chrono::NaiveDateTime;
+use chrono::{Utc, TimeZone};
 use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
@@ -129,7 +129,7 @@ impl BufferService for BufferServer {
         let result = self.resource_db.create_buffer(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            NaiveDateTime::from_timestamp_micros(request.timestamp).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
             Some(request.index),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
