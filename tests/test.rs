@@ -10,7 +10,7 @@ mod tests {
     use rmcs_auth_api::user::user_service_client::UserServiceClient;
     use rmcs_auth_api::user::{UserSchema, UserRole, UserId};
     use rmcs_auth_api::auth::auth_service_client::AuthServiceClient;
-    use rmcs_auth_api::auth::{UserKeyRequest, UserLoginRequest, UserLogoutRequest};
+    use rmcs_auth_api::auth::{UserKeyRequest, UserLoginRequest, UserRefreshRequest, UserLogoutRequest};
     use rmcs_resource_api::model::model_service_client::ModelServiceClient;
     use rmcs_resource_api::model::{ModelSchema, ModelTypes, ModelId};
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
@@ -55,6 +55,18 @@ mod tests {
         let (access_token, refresh_token) = response.access_tokens.into_iter()
             .map(|a| (a.access_token, a.refresh_token)).next().unwrap();
         (Uuid::from_slice(&response.user_id).unwrap(), response.auth_token, access_token, refresh_token)
+    }
+
+    async fn refresh(address: &str, api_id: Uuid, access_token: &str, refresh_token: &str) -> (String, String) {
+        let channel = Channel::from_shared(address.to_owned()).unwrap().connect().await.unwrap();
+        let mut client = AuthServiceClient::new(channel);
+        let request = Request::new(UserRefreshRequest {
+            api_id: api_id.as_bytes().to_vec(),
+            access_token: access_token.to_owned(),
+            refresh_token: refresh_token.to_owned()
+        });
+        let response = client.user_refresh(request).await.unwrap().into_inner();
+        (response.access_token, response.refresh_token)
     }
 
     async fn logout(address: &str, user_id: Uuid, auth_token: &str) {
@@ -104,9 +116,8 @@ mod tests {
         });
         let response = api_service.create_api(request).await.unwrap().into_inner();
         let api_id = response.id;
-        let proc_names: Vec<String> = ACCESSES.iter().map(|&i| i.0.to_owned()).collect();
-        let mut proc_ids = Vec::new();
-        for name in &proc_names {
+        let mut proc_map = Vec::new();
+        for &(name, _) in ACCESSES {
             let request = Request::new(ProcedureSchema {
                 id: Uuid::nil().as_bytes().to_vec(),
                 api_id: api_id.clone(),
@@ -115,11 +126,11 @@ mod tests {
                 roles: Vec::new()
             });
             let response = api_service.create_procedure(request).await.unwrap().into_inner();
-            proc_ids.push(response.id);
+            proc_map.push((response.id, name))
         };
 
         // create roles and link it to procedures
-        let mut role_ids = Vec::new();
+        let mut role_map = Vec::new();
         for &name in ROLES {
             let request = Request::new(RoleSchema {
                 id: Uuid::nil().as_bytes().to_vec(),
@@ -133,24 +144,20 @@ mod tests {
                 procedures: Vec::new()
             });
             let response = role_service.create_role(request).await.unwrap().into_inner();
-            role_ids.push(response.id);
+            role_map.push((response.id, name));
         }
         let mut role_accesses = Vec::new();
-        for access in ACCESSES {
-            let index = proc_names.iter()
-                .enumerate()
-                .filter(|(_, s)| **s == access.0)
+        for &(proc_name, roles) in ACCESSES {
+            let proc_id = proc_map.iter()
+                .filter(|(_, s)| *s == proc_name)
                 .map(|(i, _)| i)
                 .next().unwrap();
-            let proc_id = proc_ids.get(index).unwrap().to_owned();
-            for &role in access.1 {
-                let index = ROLES.iter()
-                    .enumerate()
-                    .filter(|(_, s)| **s == role)
+            for &role in roles {
+                let role_id = role_map.iter()
+                    .filter(|(_, s)| *s == role)
                     .map(|(i, _)| i)
                     .next().unwrap();
-                let role_id = role_ids.get(index).unwrap().to_owned();
-                role_accesses.push((role_id, proc_id.clone()));
+                role_accesses.push((role_id.to_owned(), proc_id.to_owned()));
             }
         }
         for (id, procedure_id) in role_accesses.clone() {
@@ -162,7 +169,6 @@ mod tests {
         }
 
         // create users and link it to a role
-        let mut user_ids = Vec::new();
         let mut user_roles = Vec::new();
         for &(user, password, role) in USERS {
             let request = Request::new(UserSchema {
@@ -174,14 +180,11 @@ mod tests {
                 roles: Vec::new()
             });
             let response = user_service.create_user(request).await.unwrap().into_inner();
-            user_ids.push(response.id.clone());
-            let index = ROLES.iter()
-                .enumerate()
-                .filter(|(_, s)| **s == role)
+            let role_id = role_map.iter()
+                .filter(|(_, s)| *s == role)
                 .map(|(i, _)| i)
                 .next().unwrap();
-            let role_id = role_ids.get(index).unwrap().to_owned();
-            user_roles.push((response.id.clone(), role_id));
+            user_roles.push((response.id.clone(), role_id.to_owned()));
         }
         for (user_id, role_id) in user_roles.clone() {
             let request = Request::new(UserRole {
@@ -198,7 +201,7 @@ mod tests {
         resource_server.start_server();
 
         // user and admin login
-        let (user_id, user_auth, user_access, _) = 
+        let (user_id, user_auth, user_access, user_refresh) = 
             login(&auth_server.address, USER_NAME, USER_PW).await;
         let (admin_id, admin_auth, admin_access, _) = 
             login(&auth_server.address, ADMIN_NAME, ADMIN_PW).await;
@@ -244,6 +247,17 @@ mod tests {
         let try_response = model_service_user.read_model(request).await;
         assert!(try_response.is_ok());
 
+        // refresh user
+        let (user_access, _) = refresh(&auth_server.address, Uuid::from_slice(&api_id).unwrap(), &user_access, &user_refresh).await;
+        let interceptor_user = TokenInterceptor(user_access.to_owned());
+        let mut model_service_user = 
+            ModelServiceClient::with_interceptor(channel.clone(), interceptor_user.clone());
+        // try to read model again after refreshing token
+        let request = Request::new(ModelId {
+            id: model_id.clone()
+        });
+        model_service_user.read_model(request).await.unwrap();
+
         // remove model type and delete model
         let id = ModelId {
             id: model_id.clone()
@@ -266,7 +280,7 @@ mod tests {
             });
             user_service.remove_user_role(request).await.unwrap();
         }
-        for id in role_ids.clone() {
+        for (id, _) in user_roles.clone() {
             let request = Request::new(UserId {
                 id
             });
@@ -281,7 +295,7 @@ mod tests {
             });
             role_service.remove_role_access(request).await.unwrap();
         }
-        for id in role_ids.clone() {
+        for (id, _) in role_map.clone() {
             let request = Request::new(RoleId {
                 id
             });
@@ -289,7 +303,7 @@ mod tests {
         }
 
         // delete procedures and api
-        for id in proc_ids.clone() {
+        for (id, _) in proc_map.clone() {
             let request = Request::new(ProcedureId {
                 id
             });
