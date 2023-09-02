@@ -16,7 +16,7 @@ mod tests {
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
     use rmcs_api_server::utility::config::{ROOT_NAME, ROOT_DATA};
     use rmcs_api_server::utility::interceptor::TokenInterceptor;
-    use rmcs_api_client::utility::test::{TestServerKind, TestServer};
+    use rmcs_api_server::utility::test::{TestServerKind, TestServer};
 
     const ACCESSES: &[(&str, &[&str])] = &[
         ("read_model", &["admin", "user"]),

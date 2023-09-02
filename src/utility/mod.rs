@@ -3,6 +3,7 @@ pub mod config;
 pub mod validator;
 pub mod interceptor;
 pub mod auth;
+pub mod test;
 
 use rsa::{RsaPrivateKey, Pkcs1v15Encrypt, RsaPublicKey};
 use pkcs8::{DecodePublicKey, EncodePublicKey};
