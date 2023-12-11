@@ -15,14 +15,9 @@ use rmcs_resource_api::device::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_DEVICE, READ_DEVICE_BY_SN, LIST_DEVICE_BY_GATEWAY, LIST_DEVICE_BY_TYPE, LIST_DEVICE_BY_NAME,
-    LIST_DEVICE_BY_GATEWAY_TYPE, LIST_DEVICE_BY_GATEWAY_NAME,
-    CREATE_DEVICE, UPDATE_DEVICE, DELETE_DEVICE,
-    READ_GATEWAY, READ_GATEWAY_BY_SN, LIST_GATEWAY_BY_TYPE, LIST_GATEWAY_BY_NAME,
-    CREATE_GATEWAY, UPDATE_GATEWAY, DELETE_GATEWAY,
-    READ_DEVICE_CONFIG, LIST_DEVICE_CONFIG, CREATE_DEVICE_CONFIG, UPDATE_DEVICE_CONFIG, DELETE_DEVICE_CONFIG,
-    READ_GATEWAY_CONFIG, LIST_GATEWAY_CONFIG, CREATE_GATEWAY_CONFIG, UPDATE_GATEWAY_CONFIG, DELETE_GATEWAY_CONFIG,
-    READ_TYPE, LIST_TYPE_BY_NAME, CREATE_TYPE, UPDATE_TYPE, DELETE_TYPE, ADD_TYPE_MODEL, REMOVE_TYPE_MODEL
+    READ_DEVICE, CREATE_DEVICE, UPDATE_DEVICE, DELETE_DEVICE,
+    READ_DEVICE_CONFIG, CREATE_DEVICE_CONFIG, UPDATE_DEVICE_CONFIG, DELETE_DEVICE_CONFIG,
+    READ_TYPE, CREATE_TYPE, UPDATE_TYPE, DELETE_TYPE, CHANGE_TYPE_MODEL
 };
 use super::{
     DEVICE_NOT_FOUND, DEVICE_CREATE_ERR, DEVICE_UPDATE_ERR, DEVICE_DELETE_ERR,
@@ -67,7 +62,7 @@ impl DeviceService for DeviceServer {
     async fn read_device_by_sn(&self, request: Request<SerialNumber>)
         -> Result<Response<DeviceReadResponse>, Status>
     {
-        self.validate(request.extensions(), READ_DEVICE_BY_SN)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.read_device_by_sn(&request.serial_number).await;
         let result = match result {
@@ -80,7 +75,7 @@ impl DeviceService for DeviceServer {
     async fn list_device_by_gateway(&self, request: Request<GatewayId>)
         -> Result<Response<DeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DEVICE_BY_GATEWAY)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_by_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
@@ -93,7 +88,7 @@ impl DeviceService for DeviceServer {
     async fn list_device_by_type(&self, request: Request<TypeId>)
         -> Result<Response<DeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DEVICE_BY_TYPE)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_by_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
@@ -106,7 +101,7 @@ impl DeviceService for DeviceServer {
     async fn list_device_by_name(&self, request: Request<DeviceName>)
         -> Result<Response<DeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DEVICE_BY_NAME)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_by_name(&request.name).await;
         let results = match result {
@@ -119,7 +114,7 @@ impl DeviceService for DeviceServer {
     async fn list_device_by_gateway_type(&self, request: Request<DeviceGatewayType>)
         -> Result<Response<DeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DEVICE_BY_GATEWAY_TYPE)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_by_gateway_type(
             Uuid::from_slice(&request.gateway_id).unwrap_or_default(),
@@ -135,7 +130,7 @@ impl DeviceService for DeviceServer {
     async fn list_device_by_gateway_name(&self, request: Request<DeviceGatewayName>)
         -> Result<Response<DeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DEVICE_BY_GATEWAY_NAME)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_by_gateway_name(
             Uuid::from_slice(&request.gateway_id).unwrap_or_default(),
@@ -204,7 +199,7 @@ impl DeviceService for DeviceServer {
     async fn read_gateway(&self, request: Request<GatewayId>)
         -> Result<Response<GatewayReadResponse>, Status>
     {
-        self.validate(request.extensions(), READ_GATEWAY)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.read_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
@@ -217,7 +212,7 @@ impl DeviceService for DeviceServer {
     async fn read_gateway_by_sn(&self, request: Request<SerialNumber>)
         -> Result<Response<GatewayReadResponse>, Status>
     {
-        self.validate(request.extensions(), READ_GATEWAY_BY_SN)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.read_gateway_by_sn(&request.serial_number).await;
         let result = match result {
@@ -230,7 +225,7 @@ impl DeviceService for DeviceServer {
     async fn list_gateway_by_type(&self, request: Request<TypeId>)
         -> Result<Response<GatewayListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GATEWAY_BY_TYPE)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_gateway_by_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
@@ -243,7 +238,7 @@ impl DeviceService for DeviceServer {
     async fn list_gateway_by_name(&self, request: Request<GatewayName>)
         -> Result<Response<GatewayListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GATEWAY_BY_NAME)?;
+        self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_gateway_by_name(&request.name).await;
         let results = match result {
@@ -256,7 +251,7 @@ impl DeviceService for DeviceServer {
     async fn create_gateway(&self, request: Request<GatewaySchema>)
         -> Result<Response<GatewayChangeResponse>, Status>
     {
-        self.validate(request.extensions(), CREATE_GATEWAY)?;
+        self.validate(request.extensions(), CREATE_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.create_gateway(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -275,7 +270,7 @@ impl DeviceService for DeviceServer {
     async fn update_gateway(&self, request: Request<GatewayUpdate>)
         -> Result<Response<GatewayChangeResponse>, Status>
     {
-        self.validate(request.extensions(), UPDATE_GATEWAY)?;
+        self.validate(request.extensions(), UPDATE_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.update_gateway(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -294,7 +289,7 @@ impl DeviceService for DeviceServer {
     async fn delete_gateway(&self, request: Request<GatewayId>)
     -> Result<Response<GatewayChangeResponse>, Status>
     {
-        self.validate(request.extensions(), DELETE_GATEWAY)?;
+        self.validate(request.extensions(), DELETE_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
@@ -320,7 +315,7 @@ impl DeviceService for DeviceServer {
     async fn list_device_config(&self, request: Request<DeviceId>)
         -> Result<Response<ConfigListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DEVICE_CONFIG)?;
+        self.validate(request.extensions(), READ_DEVICE_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_device_config_by_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
@@ -390,7 +385,7 @@ impl DeviceService for DeviceServer {
     async fn read_gateway_config(&self, request: Request<ConfigId>)
         -> Result<Response<ConfigReadResponse>, Status>
     {
-        self.validate(request.extensions(), READ_GATEWAY_CONFIG)?;
+        self.validate(request.extensions(), READ_DEVICE_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.read_gateway_config(request.id).await;
         let result = match result {
@@ -403,7 +398,7 @@ impl DeviceService for DeviceServer {
     async fn list_gateway_config(&self, request: Request<GatewayId>)
         -> Result<Response<ConfigListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GATEWAY_CONFIG)?;
+        self.validate(request.extensions(), READ_DEVICE_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_gateway_config_by_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
@@ -416,7 +411,7 @@ impl DeviceService for DeviceServer {
     async fn create_gateway_config(&self, request: Request<ConfigSchema>)
         -> Result<Response<ConfigCreateResponse>, Status>
     {
-        self.validate(request.extensions(), CREATE_GATEWAY_CONFIG)?;
+        self.validate(request.extensions(), CREATE_DEVICE_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_gateway_config(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
@@ -437,7 +432,7 @@ impl DeviceService for DeviceServer {
     async fn update_gateway_config(&self, request: Request<ConfigUpdate>)
         -> Result<Response<ConfigChangeResponse>, Status>
     {
-        self.validate(request.extensions(), UPDATE_GATEWAY_CONFIG)?;
+        self.validate(request.extensions(), UPDATE_DEVICE_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.update_gateway_config(
             request.id,
@@ -460,7 +455,7 @@ impl DeviceService for DeviceServer {
     async fn delete_gateway_config(&self, request: Request<ConfigId>)
         -> Result<Response<ConfigChangeResponse>, Status>
     {
-        self.validate(request.extensions(), DELETE_GATEWAY_CONFIG)?;
+        self.validate(request.extensions(), DELETE_DEVICE_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_gateway_config(request.id).await;
         match result {
@@ -486,7 +481,7 @@ impl DeviceService for DeviceServer {
     async fn list_type_by_name(&self, request: Request<TypeName>)
         -> Result<Response<TypeListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_TYPE_BY_NAME)?;
+        self.validate(request.extensions(), READ_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_type_by_name(&request.name).await;
         let results = match result {
@@ -545,7 +540,7 @@ impl DeviceService for DeviceServer {
     async fn add_type_model(&self, request: Request<TypeModel>)
         -> Result<Response<TypeChangeResponse>, Status>
     {
-        self.validate(request.extensions(), ADD_TYPE_MODEL)?;
+        self.validate(request.extensions(), CHANGE_TYPE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.add_type_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -561,7 +556,7 @@ impl DeviceService for DeviceServer {
     async fn remove_type_model(&self, request: Request<TypeModel>)
         -> Result<Response<TypeChangeResponse>, Status>
     {
-        self.validate(request.extensions(), REMOVE_TYPE_MODEL)?;
+        self.validate(request.extensions(), CHANGE_TYPE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_type_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -579,14 +574,9 @@ impl AccessValidator for DeviceServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_DEVICE, READ_DEVICE_BY_SN, LIST_DEVICE_BY_GATEWAY, LIST_DEVICE_BY_TYPE, LIST_DEVICE_BY_NAME,
-            LIST_DEVICE_BY_GATEWAY_TYPE, LIST_DEVICE_BY_GATEWAY_NAME,
-            CREATE_DEVICE, UPDATE_DEVICE, DELETE_DEVICE,
-            READ_GATEWAY, READ_GATEWAY_BY_SN, LIST_GATEWAY_BY_TYPE, LIST_GATEWAY_BY_NAME,
-            CREATE_GATEWAY, UPDATE_GATEWAY, DELETE_GATEWAY,
-            READ_DEVICE_CONFIG, LIST_DEVICE_CONFIG, CREATE_DEVICE_CONFIG, UPDATE_DEVICE_CONFIG, DELETE_DEVICE_CONFIG,
-            READ_GATEWAY_CONFIG, LIST_GATEWAY_CONFIG, CREATE_GATEWAY_CONFIG, UPDATE_GATEWAY_CONFIG, DELETE_GATEWAY_CONFIG,
-            READ_TYPE, LIST_TYPE_BY_NAME, CREATE_TYPE, UPDATE_TYPE, DELETE_TYPE, ADD_TYPE_MODEL, REMOVE_TYPE_MODEL
+            READ_DEVICE, CREATE_DEVICE, UPDATE_DEVICE, DELETE_DEVICE,
+            READ_DEVICE_CONFIG, CREATE_DEVICE_CONFIG, UPDATE_DEVICE_CONFIG, DELETE_DEVICE_CONFIG,
+            READ_TYPE, CREATE_TYPE, UPDATE_TYPE, DELETE_TYPE, CHANGE_TYPE_MODEL
         ];
         self.token_key = token_key.to_owned();
         self.accesses = Self::construct_accesses(accesses, PROCEDURES);

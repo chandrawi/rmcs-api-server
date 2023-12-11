@@ -10,12 +10,7 @@ use rmcs_resource_api::group::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_GROUP_MODEL, LIST_GROUP_MODEL_BY_NAME, LIST_GROUP_MODEL_BY_CATEGORY, LIST_GROUP_MODEL_BY_NAME_CATEGORY,
-    CREATE_GROUP_MODEL, UPDATE_GROUP_MODEL, DELETE_GROUP_MODEL, ADD_GROUP_MODEL_MEMBER, REMOVE_GROUP_MODEL_MEMBER,
-    READ_GROUP_DEVICE, LIST_GROUP_DEVICE_BY_NAME, LIST_GROUP_DEVICE_BY_CATEGORY, LIST_GROUP_DEVICE_BY_NAME_CATEGORY,
-    CREATE_GROUP_DEVICE, UPDATE_GROUP_DEVICE, DELETE_GROUP_DEVICE, ADD_GROUP_DEVICE_MEMBER, REMOVE_GROUP_DEVICE_MEMBER,
-    READ_GROUP_GATEWAY, LIST_GROUP_GATEWAY_BY_NAME, LIST_GROUP_GATEWAY_BY_CATEGORY, LIST_GROUP_GATEWAY_BY_NAME_CATEGORY,
-    CREATE_GROUP_GATEWAY, UPDATE_GROUP_GATEWAY, DELETE_GROUP_GATEWAY, ADD_GROUP_GATEWAY_MEMBER, REMOVE_GROUP_GATEWAY_MEMBER
+    READ_GROUP, CREATE_GROUP, UPDATE_GROUP, DELETE_GROUP, CHANGE_GROUP_MEMBER
 };
 use super::{
     GROUP_NOT_FOUND, GROUP_CREATE_ERR, GROUP_UPDATE_ERR, GROUP_DELETE_ERR, ADD_MEMBER_ERR, RMV_MEMBER_ERR
@@ -43,7 +38,7 @@ impl GroupService for GroupServer {
     async fn read_group_model(&self, request: Request<GroupId>)
         -> Result<Response<GroupModelReadResponse>, Status>
     {
-        self.validate(request.extensions(), READ_GROUP_MODEL)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.read_group_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
@@ -56,7 +51,7 @@ impl GroupService for GroupServer {
     async fn list_group_model_by_name(&self, request: Request<GroupName>)
         -> Result<Response<GroupModelListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_MODEL_BY_NAME)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_model_by_name(&request.name).await;
         let results = match result {
@@ -69,7 +64,7 @@ impl GroupService for GroupServer {
     async fn list_group_model_by_category(&self, request: Request<GroupCategory>)
         -> Result<Response<GroupModelListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_MODEL_BY_CATEGORY)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_model_by_category(&request.category).await;
         let results = match result {
@@ -82,7 +77,7 @@ impl GroupService for GroupServer {
     async fn list_group_model_by_name_category(&self, request: Request<GroupNameCategory>)
         -> Result<Response<GroupModelListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_MODEL_BY_NAME_CATEGORY)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_model_by_name_category(
             &request.name,
@@ -98,7 +93,7 @@ impl GroupService for GroupServer {
     async fn create_group_model(&self, request: Request<GroupModelSchema>)
         -> Result<Response<GroupCreateResponse>, Status>
     {
-        self.validate(request.extensions(), CREATE_GROUP_MODEL)?;
+        self.validate(request.extensions(), CREATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.create_group_model(
             &request.name,
@@ -115,7 +110,7 @@ impl GroupService for GroupServer {
     async fn update_group_model(&self, request: Request<GroupUpdate>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), UPDATE_GROUP_MODEL)?;
+        self.validate(request.extensions(), UPDATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.update_group_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -133,7 +128,7 @@ impl GroupService for GroupServer {
     async fn delete_group_model(&self, request: Request<GroupId>)
     -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), DELETE_GROUP_MODEL)?;
+        self.validate(request.extensions(), DELETE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_group_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
@@ -146,7 +141,7 @@ impl GroupService for GroupServer {
     async fn add_group_model_member(&self, request: Request<GroupModel>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), ADD_GROUP_MODEL_MEMBER)?;
+        self.validate(request.extensions(), CHANGE_GROUP_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.add_group_model_member(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -162,7 +157,7 @@ impl GroupService for GroupServer {
     async fn remove_group_model_member(&self, request: Request<GroupModel>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), REMOVE_GROUP_MODEL_MEMBER)?;
+        self.validate(request.extensions(), CHANGE_GROUP_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_group_model_member(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -178,7 +173,7 @@ impl GroupService for GroupServer {
     async fn read_group_device(&self, request: Request<GroupId>)
         -> Result<Response<GroupDeviceReadResponse>, Status>
     {
-        self.validate(request.extensions(), READ_GROUP_DEVICE)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.read_group_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
@@ -191,7 +186,7 @@ impl GroupService for GroupServer {
     async fn list_group_device_by_name(&self, request: Request<GroupName>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_DEVICE_BY_NAME)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_device_by_name(&request.name).await;
         let results = match result {
@@ -204,7 +199,7 @@ impl GroupService for GroupServer {
     async fn list_group_device_by_category(&self, request: Request<GroupCategory>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_DEVICE_BY_CATEGORY)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_device_by_category(&request.category).await;
         let results = match result {
@@ -217,7 +212,7 @@ impl GroupService for GroupServer {
     async fn list_group_device_by_name_category(&self, request: Request<GroupNameCategory>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_DEVICE_BY_NAME_CATEGORY)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_device_by_name_category(
             &request.name,
@@ -233,7 +228,7 @@ impl GroupService for GroupServer {
     async fn create_group_device(&self, request: Request<GroupDeviceSchema>)
         -> Result<Response<GroupCreateResponse>, Status>
     {
-        self.validate(request.extensions(), CREATE_GROUP_DEVICE)?;
+        self.validate(request.extensions(), CREATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.create_group_device(
             &request.name,
@@ -250,7 +245,7 @@ impl GroupService for GroupServer {
     async fn update_group_device(&self, request: Request<GroupUpdate>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), UPDATE_GROUP_DEVICE)?;
+        self.validate(request.extensions(), UPDATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.update_group_device(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -268,7 +263,7 @@ impl GroupService for GroupServer {
     async fn delete_group_device(&self, request: Request<GroupId>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), DELETE_GROUP_DEVICE)?;
+        self.validate(request.extensions(), DELETE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_group_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
@@ -281,7 +276,7 @@ impl GroupService for GroupServer {
     async fn add_group_device_member(&self, request: Request<GroupDevice>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), ADD_GROUP_DEVICE_MEMBER)?;
+        self.validate(request.extensions(), CHANGE_GROUP_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.add_group_device_member(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -297,7 +292,7 @@ impl GroupService for GroupServer {
     async fn remove_group_device_member(&self, request: Request<GroupDevice>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), REMOVE_GROUP_DEVICE_MEMBER)?;
+        self.validate(request.extensions(), CHANGE_GROUP_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_group_device_member(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -313,7 +308,7 @@ impl GroupService for GroupServer {
     async fn read_group_gateway(&self, request: Request<GroupId>)
         -> Result<Response<GroupDeviceReadResponse>, Status>
     {
-        self.validate(request.extensions(), READ_GROUP_GATEWAY)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.read_group_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
@@ -326,7 +321,7 @@ impl GroupService for GroupServer {
     async fn list_group_gateway_by_name(&self, request: Request<GroupName>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_GATEWAY_BY_NAME)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_gateway_by_name(&request.name).await;
         let results = match result {
@@ -339,7 +334,7 @@ impl GroupService for GroupServer {
     async fn list_group_gateway_by_category(&self, request: Request<GroupCategory>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_GATEWAY_BY_CATEGORY)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_gateway_by_category(&request.category).await;
         let results = match result {
@@ -352,7 +347,7 @@ impl GroupService for GroupServer {
     async fn list_group_gateway_by_name_category(&self, request: Request<GroupNameCategory>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_GROUP_GATEWAY_BY_NAME_CATEGORY)?;
+        self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_gateway_by_name_category(
             &request.name,
@@ -368,7 +363,7 @@ impl GroupService for GroupServer {
     async fn create_group_gateway(&self, request: Request<GroupDeviceSchema>)
         -> Result<Response<GroupCreateResponse>, Status>
     {
-        self.validate(request.extensions(), CREATE_GROUP_GATEWAY)?;
+        self.validate(request.extensions(), CREATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.create_group_gateway(
             &request.name,
@@ -385,7 +380,7 @@ impl GroupService for GroupServer {
     async fn update_group_gateway(&self, request: Request<GroupUpdate>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), UPDATE_GROUP_GATEWAY)?;
+        self.validate(request.extensions(), UPDATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.update_group_gateway(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -403,7 +398,7 @@ impl GroupService for GroupServer {
     async fn delete_group_gateway(&self, request: Request<GroupId>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), DELETE_GROUP_GATEWAY)?;
+        self.validate(request.extensions(), DELETE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_group_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
@@ -416,7 +411,7 @@ impl GroupService for GroupServer {
     async fn add_group_gateway_member(&self, request: Request<GroupDevice>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), ADD_GROUP_GATEWAY_MEMBER)?;
+        self.validate(request.extensions(), CHANGE_GROUP_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.add_group_gateway_member(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -432,7 +427,7 @@ impl GroupService for GroupServer {
     async fn remove_group_gateway_member(&self, request: Request<GroupDevice>)
         -> Result<Response<GroupChangeResponse>, Status>
     {
-        self.validate(request.extensions(), REMOVE_GROUP_GATEWAY_MEMBER)?;
+        self.validate(request.extensions(), CHANGE_GROUP_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_group_gateway_member(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -451,12 +446,7 @@ impl AccessValidator for GroupServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_GROUP_MODEL, LIST_GROUP_MODEL_BY_NAME, LIST_GROUP_MODEL_BY_CATEGORY, LIST_GROUP_MODEL_BY_NAME_CATEGORY,
-            CREATE_GROUP_MODEL, UPDATE_GROUP_MODEL, DELETE_GROUP_MODEL, ADD_GROUP_MODEL_MEMBER, REMOVE_GROUP_MODEL_MEMBER,
-            READ_GROUP_DEVICE, LIST_GROUP_DEVICE_BY_NAME, LIST_GROUP_DEVICE_BY_CATEGORY, LIST_GROUP_DEVICE_BY_NAME_CATEGORY,
-            CREATE_GROUP_DEVICE, UPDATE_GROUP_DEVICE, DELETE_GROUP_DEVICE, ADD_GROUP_DEVICE_MEMBER, REMOVE_GROUP_DEVICE_MEMBER,
-            READ_GROUP_GATEWAY, LIST_GROUP_GATEWAY_BY_NAME, LIST_GROUP_GATEWAY_BY_CATEGORY, LIST_GROUP_GATEWAY_BY_NAME_CATEGORY,
-            CREATE_GROUP_GATEWAY, UPDATE_GROUP_GATEWAY, DELETE_GROUP_GATEWAY, ADD_GROUP_GATEWAY_MEMBER, REMOVE_GROUP_GATEWAY_MEMBER
+            READ_GROUP, CREATE_GROUP, UPDATE_GROUP, DELETE_GROUP, CHANGE_GROUP_MEMBER
         ];
         self.token_key = token_key.to_owned();
         self.accesses = Self::construct_accesses(accesses, PROCEDURES);

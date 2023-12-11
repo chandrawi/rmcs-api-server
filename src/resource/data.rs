@@ -11,11 +11,7 @@ use rmcs_resource_api::data::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_DATA, LIST_DATA_BY_TIME, LIST_DATA_BY_LAST_TIME, LIST_DATA_BY_RANGE_TIME,
-    LIST_DATA_BY_NUMBER_BEFORE, LIST_DATA_BY_NUMBER_AFTER, GET_DATA_MODEL,
-    READ_DATA_WITH_MODEL, LIST_DATA_WITH_MODEL_BY_TIME, LIST_DATA_WITH_MODEL_BY_LAST_TIME,
-    LIST_DATA_WITH_MODEL_BY_RANGE_TIME, LIST_DATA_WITH_MODEL_BY_NUMBER_BEFORE, LIST_DATA_WITH_MODEL_BY_NUMBER_AFTER,
-    CREATE_DATA, CREATE_DATA_WITH_MODEL, DELETE_DATA, DELETE_DATA_WITH_MODEL
+    READ_DATA, GET_DATA_MODEL, READ_DATA_WITH_MODEL, CREATE_DATA, DELETE_DATA
 };
 use super::{
     DATA_NOT_FOUND, DATA_CREATE_ERR, DATA_DELETE_ERR, DATA_MODEL_NOT_FOUND
@@ -62,7 +58,7 @@ impl DataService for DataServer {
     async fn list_data_by_time(&self, request: Request<DataTime>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_BY_TIME)?;
+        self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_time(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
@@ -79,7 +75,7 @@ impl DataService for DataServer {
     async fn list_data_by_last_time(&self, request: Request<DataTime>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_BY_LAST_TIME)?;
+        self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_last_time(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
@@ -96,7 +92,7 @@ impl DataService for DataServer {
     async fn list_data_by_range_time(&self, request: Request<DataRange>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_BY_RANGE_TIME)?;
+        self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_range_time(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
@@ -114,7 +110,7 @@ impl DataService for DataServer {
     async fn list_data_by_number_before(&self, request: Request<DataNumber>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_BY_NUMBER_BEFORE)?;
+        self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_number_before(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
@@ -132,7 +128,7 @@ impl DataService for DataServer {
     async fn list_data_by_number_after(&self, request: Request<DataNumber>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_BY_NUMBER_AFTER)?;
+        self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_by_number_after(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
@@ -184,7 +180,7 @@ impl DataService for DataServer {
     async fn list_data_with_model_by_time(&self, request: Request<DataTimeModel>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_WITH_MODEL_BY_TIME)?;
+        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
         let request = request.into_inner();
         if let None = request.model {
             return Ok(Response::new(DataListResponse { results: Vec::new() }));
@@ -204,7 +200,7 @@ impl DataService for DataServer {
     async fn list_data_with_model_by_last_time(&self, request: Request<DataTimeModel>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_WITH_MODEL_BY_LAST_TIME)?;
+        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
         let request = request.into_inner();
         if let None = request.model {
             return Ok(Response::new(DataListResponse { results: Vec::new() }));
@@ -224,7 +220,7 @@ impl DataService for DataServer {
     async fn list_data_with_model_by_range_time(&self, request: Request<DataRangeModel>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_WITH_MODEL_BY_RANGE_TIME)?;
+        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
         let request = request.into_inner();
         if let None = request.model {
             return Ok(Response::new(DataListResponse { results: Vec::new() }));
@@ -245,7 +241,7 @@ impl DataService for DataServer {
     async fn list_data_with_model_by_number_before(&self, request: Request<DataNumberModel>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_WITH_MODEL_BY_NUMBER_BEFORE)?;
+        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
         let request = request.into_inner();
         if let None = request.model {
             return Ok(Response::new(DataListResponse { results: Vec::new() }));
@@ -266,7 +262,7 @@ impl DataService for DataServer {
     async fn list_data_with_model_by_number_after(&self, request: Request<DataNumberModel>)
         -> Result<Response<DataListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_DATA_WITH_MODEL_BY_NUMBER_AFTER)?;
+        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
         let request = request.into_inner();
         if let None = request.model {
             return Ok(Response::new(DataListResponse { results: Vec::new() }));
@@ -311,7 +307,7 @@ impl DataService for DataServer {
     async fn create_data_with_model(&self, request: Request<DataSchemaModel>)
         -> Result<Response<DataChangeResponse>, Status>
     {
-        self.validate(request.extensions(), CREATE_DATA_WITH_MODEL)?;
+        self.validate(request.extensions(), CREATE_DATA)?;
         let request = request.into_inner();
         if let None = request.model {
             return Ok(Response::new(DataChangeResponse { }));
@@ -356,7 +352,7 @@ impl DataService for DataServer {
     async fn delete_data_with_model(&self, request: Request<DataIdModel>)
         -> Result<Response<DataChangeResponse>, Status>
     {
-        self.validate(request.extensions(), DELETE_DATA_WITH_MODEL)?;
+        self.validate(request.extensions(), DELETE_DATA)?;
         let request = request.into_inner();
         if let None = request.model {
             return Ok(Response::new(DataChangeResponse { }));
@@ -380,11 +376,7 @@ impl AccessValidator for DataServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_DATA, LIST_DATA_BY_TIME, LIST_DATA_BY_LAST_TIME, LIST_DATA_BY_RANGE_TIME,
-            LIST_DATA_BY_NUMBER_BEFORE, LIST_DATA_BY_NUMBER_AFTER, GET_DATA_MODEL,
-            READ_DATA_WITH_MODEL, LIST_DATA_WITH_MODEL_BY_TIME, LIST_DATA_WITH_MODEL_BY_LAST_TIME,
-            LIST_DATA_WITH_MODEL_BY_RANGE_TIME, LIST_DATA_WITH_MODEL_BY_NUMBER_BEFORE, LIST_DATA_WITH_MODEL_BY_NUMBER_AFTER,
-            CREATE_DATA, CREATE_DATA_WITH_MODEL, DELETE_DATA, DELETE_DATA_WITH_MODEL
+            READ_DATA, GET_DATA_MODEL, READ_DATA_WITH_MODEL, CREATE_DATA, DELETE_DATA
         ];
         self.token_key = token_key.to_owned();
         self.accesses = Self::construct_accesses(accesses, PROCEDURES);

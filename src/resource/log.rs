@@ -11,8 +11,7 @@ use rmcs_resource_api::log::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_LOG, LIST_LOG_BY_TIME, LIST_LOG_BY_LAST_TIME, LIST_LOG_BY_RANGE_TIME,
-    CREATE_LOG, UPDATE_LOG, DELETE_LOG
+    READ_LOG, CREATE_LOG, UPDATE_LOG, DELETE_LOG
 };
 use super::{
     LOG_NOT_FOUND, LOG_CREATE_ERR, LOG_UPDATE_ERR, LOG_DELETE_ERR
@@ -57,7 +56,7 @@ impl LogService for LogServer {
     async fn list_log_by_time(&self, request: Request<LogTime>)
         -> Result<Response<LogListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_LOG_BY_TIME)?;
+        self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -74,7 +73,7 @@ impl LogService for LogServer {
     async fn list_log_by_last_time(&self, request: Request<LogTime>)
         -> Result<Response<LogListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_LOG_BY_LAST_TIME)?;
+        self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_last_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -91,7 +90,7 @@ impl LogService for LogServer {
     async fn list_log_by_range_time(&self, request: Request<LogRange>)
         -> Result<Response<LogListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_LOG_BY_RANGE_TIME)?;
+        self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_range_time(
             Utc.timestamp_nanos(request.begin * 1000),
@@ -172,8 +171,7 @@ impl AccessValidator for LogServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_LOG, LIST_LOG_BY_TIME, LIST_LOG_BY_LAST_TIME, LIST_LOG_BY_RANGE_TIME,
-            CREATE_LOG, UPDATE_LOG, DELETE_LOG
+            READ_LOG, CREATE_LOG, UPDATE_LOG, DELETE_LOG
         ];
         self.token_key = token_key.to_owned();
         self.accesses = Self::construct_accesses(accesses, PROCEDURES);

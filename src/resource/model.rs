@@ -11,9 +11,8 @@ use rmcs_resource_api::model::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_MODEL, LIST_MODEL_BY_NAME, LIST_MODEL_BY_CATEGORY, LIST_MODEL_BY_NAME_CATEGORY,
-    CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, ADD_MODEL_TYPE, REMOVE_MODEL_TYPE,
-    READ_MODEL_CONFIG, LIST_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
+    READ_MODEL, CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, CHANGE_MODEL_TYPE,
+    READ_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
 };
 use super::{
     MODEL_NOT_FOUND, MODEL_CREATE_ERR, MODEL_UPDATE_ERR, MODEL_DELETE_ERR, ADD_TYPE_ERR, RMV_TYPE_ERR,
@@ -56,7 +55,7 @@ impl ModelService for ModelServer {
     async fn list_model_by_name(&self, request: Request<ModelName>)
         -> Result<Response<ModelListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_MODEL_BY_NAME)?;
+        self.validate(request.extensions(), READ_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_by_name(&request.name).await;
         let results = match result {
@@ -69,7 +68,7 @@ impl ModelService for ModelServer {
     async fn list_model_by_category(&self, request: Request<ModelCategory>)
         -> Result<Response<ModelListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_MODEL_BY_CATEGORY)?;
+        self.validate(request.extensions(), READ_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_by_category(&request.category).await;
         let results = match result {
@@ -82,7 +81,7 @@ impl ModelService for ModelServer {
     async fn list_model_by_name_category(&self, request: Request<ModelNameCategory>)
         -> Result<Response<ModelListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_MODEL_BY_NAME_CATEGORY)?;
+        self.validate(request.extensions(), READ_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_by_name_category(
             &request.name,
@@ -148,7 +147,7 @@ impl ModelService for ModelServer {
     async fn add_model_type(&self, request: Request<ModelTypes>)
         -> Result<Response<ModelChangeResponse>, Status>
     {
-        self.validate(request.extensions(), ADD_MODEL_TYPE)?;
+        self.validate(request.extensions(), CHANGE_MODEL_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.add_model_type(
             Uuid::from_slice(&request.id).unwrap_or_default(),
@@ -166,7 +165,7 @@ impl ModelService for ModelServer {
     async fn remove_model_type(&self, request: Request<ModelId>)
         -> Result<Response<ModelChangeResponse>, Status>
     {
-        self.validate(request.extensions(), REMOVE_MODEL_TYPE)?;
+        self.validate(request.extensions(), CHANGE_MODEL_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_model_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
@@ -192,7 +191,7 @@ impl ModelService for ModelServer {
     async fn list_model_config(&self, request: Request<ModelId>)
         -> Result<Response<ConfigListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_MODEL_CONFIG)?;
+        self.validate(request.extensions(), READ_MODEL_CONFIG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_model_config_by_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
@@ -266,9 +265,8 @@ impl AccessValidator for ModelServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_MODEL, LIST_MODEL_BY_NAME, LIST_MODEL_BY_CATEGORY, LIST_MODEL_BY_NAME_CATEGORY,
-            CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, ADD_MODEL_TYPE, REMOVE_MODEL_TYPE,
-            READ_MODEL_CONFIG, LIST_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
+            READ_MODEL, CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, CHANGE_MODEL_TYPE,
+            READ_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
         ];
         self.token_key = token_key.to_owned();
         self.accesses = Self::construct_accesses(accesses, PROCEDURES);

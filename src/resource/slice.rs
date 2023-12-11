@@ -9,8 +9,7 @@ use rmcs_resource_api::slice::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_SLICE, LIST_SLICE_BY_NAME, LIST_SLICE_BY_DEVICE, LIST_SLICE_BY_MODEL, LIST_SLICE_BY_DEVICE_MODEL,
-    CREATE_SLICE, UPDATE_SLICE, DELETE_SLICE
+    READ_SLICE, CREATE_SLICE, UPDATE_SLICE, DELETE_SLICE
 };
 use super::{
     SLICE_NOT_FOUND, SLICE_CREATE_ERR, SLICE_UPDATE_ERR, SLICE_DELETE_ERR
@@ -52,7 +51,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_name(&self, request: Request<SliceName>)
         -> Result<Response<SliceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_SLICE_BY_NAME)?;
+        self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_name(&request.name).await;
         let results = match result {
@@ -65,7 +64,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_device(&self, request: Request<SliceDevice>)
         -> Result<Response<SliceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_SLICE_BY_DEVICE)?;
+        self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_device(Uuid::from_slice(&request.device_id).unwrap_or_default()).await;
         let results = match result {
@@ -78,7 +77,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_model(&self, request: Request<SliceModel>)
         -> Result<Response<SliceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_SLICE_BY_MODEL)?;
+        self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_model(Uuid::from_slice(&request.model_id).unwrap_or_default()).await;
         let results = match result {
@@ -91,7 +90,7 @@ impl SliceService for SliceServer {
     async fn list_slice_by_device_model(&self, request: Request<SliceDeviceModel>)
         -> Result<Response<SliceListResponse>, Status>
     {
-        self.validate(request.extensions(), LIST_SLICE_BY_DEVICE_MODEL)?;
+        self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_slice_by_device_model(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
@@ -166,8 +165,7 @@ impl AccessValidator for SliceServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_SLICE, LIST_SLICE_BY_NAME, LIST_SLICE_BY_DEVICE, LIST_SLICE_BY_MODEL, LIST_SLICE_BY_DEVICE_MODEL,
-            CREATE_SLICE, UPDATE_SLICE, DELETE_SLICE
+            READ_SLICE, CREATE_SLICE, UPDATE_SLICE, DELETE_SLICE
         ];
         self.token_key = token_key.to_owned();
         self.accesses = Self::construct_accesses(accesses, PROCEDURES);
