@@ -105,7 +105,7 @@ mod tests {
         // create api and procedures
         let password = String::from("Api_pa55w0rd");
         let request = Request::new(ApiSchema {
-            id: Uuid::nil().as_bytes().to_vec(),
+            id: Uuid::new_v4().as_bytes().to_vec(),
             name: String::from("resource api"),
             address: String::new(),
             category: String::from("resource"),
@@ -119,7 +119,7 @@ mod tests {
         let mut proc_map = Vec::new();
         for &(name, _) in ACCESSES {
             let request = Request::new(ProcedureSchema {
-                id: Uuid::nil().as_bytes().to_vec(),
+                id: Uuid::new_v4().as_bytes().to_vec(),
                 api_id: api_id.clone(),
                 name: name.to_owned(),
                 description: String::new(),
@@ -133,7 +133,7 @@ mod tests {
         let mut role_map = Vec::new();
         for &name in ROLES {
             let request = Request::new(RoleSchema {
-                id: Uuid::nil().as_bytes().to_vec(),
+                id: Uuid::new_v4().as_bytes().to_vec(),
                 api_id: api_id.clone(),
                 name: name.to_owned(),
                 multi: false,
@@ -172,7 +172,7 @@ mod tests {
         let mut user_roles = Vec::new();
         for &(user, password, role) in USERS {
             let request = Request::new(UserSchema {
-                id: Uuid::nil().as_bytes().to_vec(),
+                id: Uuid::new_v4().as_bytes().to_vec(),
                 name: user.to_owned(),
                 email: String::new(),
                 phone: String::new(),
@@ -217,7 +217,7 @@ mod tests {
 
         // try to create model using user service and admin service, user should failed and admin should success
         let schema = ModelSchema {
-            id: Uuid::nil().as_bytes().to_vec(),
+            id: Uuid::new_v4().as_bytes().to_vec(),
             indexing: 0, // Timestamp indexing
             category: String::from("UPLINK"),
             name: String::from("name"),

@@ -100,6 +100,7 @@ impl ModelService for ModelServer {
         self.validate(request.extensions(), CREATE_MODEL)?;
         let request = request.into_inner();
         let result = self.resource_db.create_model(
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             DataIndexing::from(common::DataIndexing::from_i32(request.indexing).unwrap_or_default()),
             &request.category,
             &request.name,

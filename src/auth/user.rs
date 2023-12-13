@@ -74,6 +74,7 @@ impl UserService for UserServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_user(
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             &request.name,
             &request.email,
             &request.phone,

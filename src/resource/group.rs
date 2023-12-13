@@ -96,6 +96,7 @@ impl GroupService for GroupServer {
         self.validate(request.extensions(), CREATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.create_group_model(
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             &request.name,
             &request.category,
             Some(&request.description)
@@ -231,6 +232,7 @@ impl GroupService for GroupServer {
         self.validate(request.extensions(), CREATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.create_group_device(
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             &request.name,
             &request.category,
             Some(&request.description)
@@ -366,6 +368,7 @@ impl GroupService for GroupServer {
         self.validate(request.extensions(), CREATE_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.create_group_gateway(
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             &request.name,
             &request.category,
             Some(&request.description)

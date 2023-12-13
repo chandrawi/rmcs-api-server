@@ -89,6 +89,7 @@ impl RoleService for RoleServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.create_role(
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             Uuid::from_slice(&request.api_id).unwrap_or_default(),
             &request.name,
             request.multi,

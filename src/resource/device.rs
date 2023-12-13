@@ -8,8 +8,8 @@ use rmcs_resource_api::device::{
     GatewaySchema, GatewayId, GatewayName, GatewayUpdate,
     ConfigSchema, ConfigId, ConfigUpdate,
     TypeSchema, TypeId, TypeName, TypeModel, TypeUpdate,
-    DeviceReadResponse, DeviceListResponse, DeviceChangeResponse,
-    GatewayReadResponse, GatewayListResponse, GatewayChangeResponse,
+    DeviceReadResponse, DeviceListResponse, DeviceCreateResponse, DeviceChangeResponse,
+    GatewayReadResponse, GatewayListResponse, GatewayCreateResponse, GatewayChangeResponse,
     ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse,
     TypeReadResponse, TypeListResponse, TypeCreateResponse, TypeChangeResponse
 };
@@ -144,7 +144,7 @@ impl DeviceService for DeviceServer {
     }
 
     async fn create_device(&self, request: Request<DeviceSchema>)
-        -> Result<Response<DeviceChangeResponse>, Status>
+        -> Result<Response<DeviceCreateResponse>, Status>
     {
         self.validate(request.extensions(), CREATE_DEVICE)?;
         let request = request.into_inner();
@@ -160,7 +160,7 @@ impl DeviceService for DeviceServer {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(DEVICE_CREATE_ERR))
         };
-        Ok(Response::new(DeviceChangeResponse { }))
+        Ok(Response::new(DeviceCreateResponse { id: request.id }))
     }
 
     async fn update_device(&self, request: Request<DeviceUpdate>)
@@ -249,7 +249,7 @@ impl DeviceService for DeviceServer {
     }
 
     async fn create_gateway(&self, request: Request<GatewaySchema>)
-        -> Result<Response<GatewayChangeResponse>, Status>
+        -> Result<Response<GatewayCreateResponse>, Status>
     {
         self.validate(request.extensions(), CREATE_DEVICE)?;
         let request = request.into_inner();
@@ -264,7 +264,7 @@ impl DeviceService for DeviceServer {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(GATEWAY_CREATE_ERR))
         };
-        Ok(Response::new(GatewayChangeResponse { }))
+        Ok(Response::new(GatewayCreateResponse { id: request.id }))
     }
 
     async fn update_gateway(&self, request: Request<GatewayUpdate>)
@@ -497,6 +497,7 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), CREATE_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.create_type(
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             &request.name,
             Some(&request.description)
         ).await;
