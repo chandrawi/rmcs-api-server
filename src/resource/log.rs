@@ -61,7 +61,7 @@ impl LogService for LogServer {
         let result = self.resource_db.list_log_by_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -78,7 +78,7 @@ impl LogService for LogServer {
         let result = self.resource_db.list_log_by_last_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -96,7 +96,7 @@ impl LogService for LogServer {
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -113,10 +113,10 @@ impl LogService for LogServer {
         let result = self.resource_db.create_log(
             Utc.timestamp_nanos(request.timestamp * 1000),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            LogStatus::from_i32(request.status).unwrap_or_default().as_str_name(),
+            LogStatus::try_from(request.status).unwrap_or_default().as_str_name(),
             LogValue::from_bytes(
                 &request.log_bytes, 
-                LogType::from(common::ConfigType::from_i32(request.log_type).unwrap_or_default())
+                LogType::from(common::ConfigType::try_from(request.log_type).unwrap_or_default())
             )
         ).await;
         match result {
@@ -134,11 +134,11 @@ impl LogService for LogServer {
         let result = self.resource_db.update_log(
             Utc.timestamp_nanos(request.timestamp * 1000),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            request.status.map(|s| LogStatus::from_i32(s).unwrap_or_default().as_str_name()),
+            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name()),
             request.log_bytes.map(|s| {
                 LogValue::from_bytes(
                     &s, 
-                    LogType::from(common::ConfigType::from_i32(request.log_type.unwrap_or_default()).unwrap_or_default())
+                    LogType::from(common::ConfigType::try_from(request.log_type.unwrap_or_default()).unwrap_or_default())
                 )
             })
         ).await;

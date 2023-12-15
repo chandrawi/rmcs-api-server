@@ -290,7 +290,7 @@ impl DataService for DataServer {
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
-                    DataType::from(common::DataType::from_i32(e).unwrap_or_default())
+                    DataType::from(common::DataType::try_from(e).unwrap_or_default())
                 }).collect::<Vec<DataType>>().as_slice()
             ).to_vec()
         ).await;
@@ -316,7 +316,7 @@ impl DataService for DataServer {
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
-                    DataType::from(common::DataType::from_i32(e).unwrap_or_default())
+                    DataType::from(common::DataType::try_from(e).unwrap_or_default())
                 }).collect::<Vec<DataType>>().as_slice()
             ).to_vec()
         ).await;

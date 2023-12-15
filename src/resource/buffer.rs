@@ -58,7 +58,7 @@ impl BufferService for BufferServer {
         let result = self.resource_db.read_buffer_first(
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -75,7 +75,7 @@ impl BufferService for BufferServer {
         let result = self.resource_db.read_buffer_last(
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -93,7 +93,7 @@ impl BufferService for BufferServer {
             request.number,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -111,7 +111,7 @@ impl BufferService for BufferServer {
             request.number,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -132,10 +132,10 @@ impl BufferService for BufferServer {
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
-                    DataType::from(common::DataType::from_i32(e).unwrap_or_default())
+                    DataType::from(common::DataType::try_from(e).unwrap_or_default())
                 }).collect::<Vec<DataType>>().as_slice()
             ).to_vec(),
-            BufferStatus::from_i32(request.status).unwrap_or_default().as_str_name()
+            BufferStatus::try_from(request.status).unwrap_or_default().as_str_name()
         ).await;
         let id = match result {
             Ok(value) => value,
@@ -155,11 +155,11 @@ impl BufferService for BufferServer {
                 ArrayDataValue::from_bytes(
                     &s,
                     request.data_type.into_iter().map(|e| {
-                        DataType::from(common::DataType::from_i32(e).unwrap_or_default())
+                        DataType::from(common::DataType::try_from(e).unwrap_or_default())
                     }).collect::<Vec<DataType>>().as_slice()
                 ).to_vec()
             }),
-            request.status.map(|s| BufferStatus::from_i32(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
         ).await;
         match result {
             Ok(_) => (),

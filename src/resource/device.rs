@@ -335,7 +335,7 @@ impl DeviceService for DeviceServer {
             &request.name,
             ConfigValue::from_bytes(
                 &request.config_bytes, 
-                ConfigType::from(common::ConfigType::from_i32(request.config_type).unwrap_or_default())
+                ConfigType::from(common::ConfigType::try_from(request.config_type).unwrap_or_default())
             ),
             &request.category
         ).await;
@@ -357,7 +357,7 @@ impl DeviceService for DeviceServer {
             request.config_bytes.map(|s| {
                 ConfigValue::from_bytes(
                     &s,
-                    ConfigType::from(common::ConfigType::from_i32(request.config_type.unwrap_or_default()).unwrap_or_default())
+                    ConfigType::from(common::ConfigType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
                 )
             }),
             request.category.as_deref()
@@ -418,7 +418,7 @@ impl DeviceService for DeviceServer {
             &request.name,
             ConfigValue::from_bytes(
                 &request.config_bytes, 
-                ConfigType::from(common::ConfigType::from_i32(request.config_type).unwrap_or_default())
+                ConfigType::from(common::ConfigType::try_from(request.config_type).unwrap_or_default())
             ),
             &request.category
         ).await;
@@ -440,7 +440,7 @@ impl DeviceService for DeviceServer {
             request.config_bytes.map(|s| {
                 ConfigValue::from_bytes(
                     &s,
-                    ConfigType::from(common::ConfigType::from_i32(request.config_type.unwrap_or_default()).unwrap_or_default())
+                    ConfigType::from(common::ConfigType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
                 )
             }),
             request.category.as_deref()
