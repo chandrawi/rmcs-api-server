@@ -129,7 +129,6 @@ impl BufferService for BufferServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            Some(request.index),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {

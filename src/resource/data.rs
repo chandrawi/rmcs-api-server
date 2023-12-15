@@ -45,8 +45,7 @@ impl DataService for DataServer {
         let result = self.resource_db.read_data(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            Some(request.index)
+            Utc.timestamp_nanos(request.timestamp * 1000)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -167,8 +166,7 @@ impl DataService for DataServer {
         let result = self.resource_db.read_data_with_model(
             request.model.unwrap().into(),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            Some(request.index)
+            Utc.timestamp_nanos(request.timestamp * 1000)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -289,7 +287,6 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            Some(request.index),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
@@ -316,7 +313,6 @@ impl DataService for DataServer {
             request.model.unwrap().into(),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            Some(request.index),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| {
@@ -340,7 +336,6 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            Some(request.index)
         ).await;
         match result {
             Ok(_) => (),
@@ -360,8 +355,7 @@ impl DataService for DataServer {
         let result = self.resource_db.delete_data_with_model(
             request.model.unwrap().into(),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            Some(request.index)
+            Utc.timestamp_nanos(request.timestamp * 1000)
         ).await;
         match result {
             Ok(_) => (),

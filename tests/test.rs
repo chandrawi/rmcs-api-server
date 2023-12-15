@@ -22,8 +22,7 @@ mod tests {
         ("read_model", &["admin", "user"]),
         ("create_model", &["admin"]),
         ("delete_model", &["admin"]),
-        ("add_model_type", &["admin"]),
-        ("remove_model_type", &["admin"])
+        ("change_model_type", &["admin"])
     ];
 
     const ROLES: &[&str] = &["admin", "user"];
@@ -82,6 +81,8 @@ mod tests {
     #[tokio::test]
     async fn test_auth() -> Result<(), Box<dyn std::error::Error>>
     {
+        std::env::set_var("RUST_BACKTRACE", "1");
+
         // start auth server and wait until server process is running
         let auth_server = TestServer::new_secured(TestServerKind::Auth, None, None);
         auth_server.truncate_tables().await.unwrap();
@@ -218,7 +219,6 @@ mod tests {
         // try to create model using user service and admin service, user should failed and admin should success
         let schema = ModelSchema {
             id: Uuid::new_v4().as_bytes().to_vec(),
-            indexing: 0, // Timestamp indexing
             category: String::from("UPLINK"),
             name: String::from("name"),
             description: String::new(),

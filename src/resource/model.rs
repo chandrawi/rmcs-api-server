@@ -1,6 +1,6 @@
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, DataIndexing, DataType, ConfigType, ConfigValue};
+use rmcs_resource_db::{Resource, DataType, ConfigType, ConfigValue};
 use rmcs_resource_api::model::model_service_server::ModelService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::model::{
@@ -101,7 +101,6 @@ impl ModelService for ModelServer {
         let request = request.into_inner();
         let result = self.resource_db.create_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
-            DataIndexing::from(common::DataIndexing::from_i32(request.indexing).unwrap_or_default()),
             &request.category,
             &request.name,
             Some(&request.description)
@@ -120,7 +119,6 @@ impl ModelService for ModelServer {
         let request = request.into_inner();
         let result = self.resource_db.update_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
-            request.indexing.map(|s| DataIndexing::from(common::DataIndexing::from_i32(s).unwrap_or_default())),
             request.category.as_deref(),
             request.name.as_deref(),
             request.description.as_deref()

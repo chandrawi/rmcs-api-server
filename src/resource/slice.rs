@@ -113,8 +113,6 @@ impl SliceService for SliceServer {
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp_begin * 1000),
             Utc.timestamp_nanos(request.timestamp_end * 1000),
-            Some(request.index_begin),
-            Some(request.index_end),
             &request.name,
             Some(&request.description)
         ).await;
@@ -134,8 +132,6 @@ impl SliceService for SliceServer {
             request.id,
             request.timestamp_begin.map(|s| Utc.timestamp_nanos(s * 1000)),
             request.timestamp_end.map(|s| Utc.timestamp_nanos(s * 1000)),
-            request.index_begin.map(|s| s),
-            request.index_end.map(|s| s),
             request.name.as_deref(),
             request.description.as_deref()
         ).await;
