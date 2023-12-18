@@ -5,7 +5,7 @@ use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
-    BufferSchema, BufferId, BufferSelector, BuffersSelector, BufferUpdate,
+    BufferSchema, BufferId, BufferTime, BufferSelector, BuffersSelector, BufferUpdate,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse,
     BufferStatus
 };
@@ -43,6 +43,24 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.read_buffer(request.id).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferReadResponse { result }))
+    }
+
+    async fn read_buffer_by_time(&self, request: Request<BufferTime>)
+        -> Result<Response<BufferReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_buffer_by_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
+        ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
