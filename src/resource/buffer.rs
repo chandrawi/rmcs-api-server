@@ -1,13 +1,12 @@
 use tonic::{Request, Response, Status};
 use chrono::{Utc, TimeZone};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
+use rmcs_resource_db::{Resource, DataType, ArrayDataValue, BufferStatus};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
     BufferSchema, BufferId, BufferTime, BufferSelector, BuffersSelector, BufferUpdate,
-    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse,
-    BufferStatus
+    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -59,7 +58,7 @@ impl BufferService for BufferServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -76,7 +75,7 @@ impl BufferService for BufferServer {
         let result = self.resource_db.read_buffer_first(
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -93,7 +92,7 @@ impl BufferService for BufferServer {
         let result = self.resource_db.read_buffer_last(
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -111,7 +110,7 @@ impl BufferService for BufferServer {
             request.number,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -129,7 +128,7 @@ impl BufferService for BufferServer {
             request.number,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -153,7 +152,7 @@ impl BufferService for BufferServer {
                     DataType::from(common::DataType::try_from(e).unwrap_or_default())
                 }).collect::<Vec<DataType>>().as_slice()
             ).to_vec(),
-            BufferStatus::try_from(request.status).unwrap_or_default().as_str_name()
+            BufferStatus::from(request.status as i16)
         ).await;
         let id = match result {
             Ok(value) => value,
@@ -177,7 +176,7 @@ impl BufferService for BufferServer {
                     }).collect::<Vec<DataType>>().as_slice()
                 ).to_vec()
             }),
-            request.status.map(|s| BufferStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         match result {
             Ok(_) => (),

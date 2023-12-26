@@ -1,13 +1,12 @@
 use tonic::{Request, Response, Status};
 use chrono::{Utc, TimeZone};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, LogType, LogValue};
+use rmcs_resource_db::{Resource, LogType, LogValue, LogStatus};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::log::{
     LogSchema, LogId, LogTime, LogRange, LogUpdate,
-    LogReadResponse, LogListResponse, LogChangeResponse,
-    LogStatus
+    LogReadResponse, LogListResponse, LogChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -61,7 +60,7 @@ impl LogService for LogServer {
         let result = self.resource_db.list_log_by_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| LogStatus::from(s as i16))
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -78,7 +77,7 @@ impl LogService for LogServer {
         let result = self.resource_db.list_log_by_last_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| LogStatus::from(s as i16))
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -96,7 +95,7 @@ impl LogService for LogServer {
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name())
+            request.status.map(|s| LogStatus::from(s as i16))
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -113,7 +112,7 @@ impl LogService for LogServer {
         let result = self.resource_db.create_log(
             Utc.timestamp_nanos(request.timestamp * 1000),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            LogStatus::try_from(request.status).unwrap_or_default().as_str_name(),
+            LogStatus::from(request.status as i16),
             LogValue::from_bytes(
                 &request.log_bytes, 
                 LogType::from(common::ConfigType::try_from(request.log_type).unwrap_or_default())
@@ -134,7 +133,7 @@ impl LogService for LogServer {
         let result = self.resource_db.update_log(
             Utc.timestamp_nanos(request.timestamp * 1000),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            request.status.map(|s| LogStatus::try_from(s).unwrap_or_default().as_str_name()),
+            request.status.map(|s| LogStatus::from(s as i16)),
             request.log_bytes.map(|s| {
                 LogValue::from_bytes(
                     &s, 
