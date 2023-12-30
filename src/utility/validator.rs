@@ -1,7 +1,6 @@
 use tonic::{Status, Extensions};
 use uuid::Uuid;
 use jsonwebtoken::{decode, DecodingKey, Algorithm, Validation};
-use async_trait::async_trait;
 use super::token::TokenClaims;
 use super::config::{ROOT_ID, ROOT_NAME, ROOT_DATA};
 use rmcs_auth_db::Auth;
@@ -97,7 +96,6 @@ pub enum ValidatorKind {
     Root
 }
 
-#[async_trait]
 pub trait AuthValidator {
 
     fn with_validator(self) -> Self;
@@ -106,8 +104,8 @@ pub trait AuthValidator {
 
     fn auth_db(&self) -> &Auth;
 
-    async fn validate(&self, extension: &Extensions, kind: ValidatorKind) -> Result<(), Status>
-    {
+    fn validate(&self, extension: &Extensions, kind: ValidatorKind) -> impl std::future::Future<Output = Result<(), Status>> + Send where Self: Sync
+    {async move {
         // return ok if service doesn't configured to use validation
         if !self.validator_flag() {
             return Ok(());
@@ -134,6 +132,6 @@ pub trait AuthValidator {
         } else {
             Err(Status::unauthenticated(format!("User {} {}", user_id, ACCESS_RIGHT_ERR)))
         }
-    }
+    } }
 
 }
