@@ -41,6 +41,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token_server = TokenServer::new(auth_db.clone()).with_validator();
     let auth_server = AuthServer::new(auth_db.clone());
 
+    let api_server = tonic_web::enable(ApiServiceServer::with_interceptor(api_server, interceptor));
+    let role_server = tonic_web::enable(RoleServiceServer::with_interceptor(role_server, interceptor));
+    let user_server = tonic_web::enable(UserServiceServer::with_interceptor(user_server, interceptor));
+    let token_server = tonic_web::enable(TokenServiceServer::with_interceptor(token_server, interceptor));
+    let auth_server = tonic_web::enable(AuthServiceServer::new(auth_server));
+
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(descriptor::api::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::role::DESCRIPTOR_SET)
@@ -50,11 +56,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     tonic::transport::Server::builder()
-        .add_service(ApiServiceServer::with_interceptor(api_server, interceptor))
-        .add_service(RoleServiceServer::with_interceptor(role_server, interceptor))
-        .add_service(UserServiceServer::with_interceptor(user_server, interceptor))
-        .add_service(TokenServiceServer::with_interceptor(token_server, interceptor))
-        .add_service(AuthServiceServer::new(auth_server))
+        .accept_http1(true)
+        .add_service(api_server)
+        .add_service(role_server)
+        .add_service(user_server)
+        .add_service(token_server)
+        .add_service(auth_server)
         .add_service(reflection_service?)
         .serve(addr)
         .await?;

@@ -56,6 +56,12 @@ async fn auth_server(db_url: String, address: String) -> Result<(), Box<dyn std:
     let token_server = TokenServer::new(auth_db.clone());
     let auth_server = AuthServer::new(auth_db.clone());
 
+    let api_server = tonic_web::enable(ApiServiceServer::new(api_server));
+    let role_server = tonic_web::enable(RoleServiceServer::new(role_server));
+    let user_server = tonic_web::enable(UserServiceServer::new(user_server));
+    let token_server = tonic_web::enable(TokenServiceServer::new(token_server));
+    let auth_server = tonic_web::enable(AuthServiceServer::new(auth_server));
+
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(descriptor::api::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::role::DESCRIPTOR_SET)
@@ -65,11 +71,12 @@ async fn auth_server(db_url: String, address: String) -> Result<(), Box<dyn std:
         .build();
 
     tonic::transport::Server::builder()
-        .add_service(ApiServiceServer::new(api_server))
-        .add_service(RoleServiceServer::new(role_server))
-        .add_service(UserServiceServer::new(user_server))
-        .add_service(TokenServiceServer::new(token_server))
-        .add_service(AuthServiceServer::new(auth_server))
+        .accept_http1(true)
+        .add_service(api_server)
+        .add_service(role_server)
+        .add_service(user_server)
+        .add_service(token_server)
+        .add_service(auth_server)
         .add_service(reflection_service?)
         .serve(addr)
         .await?;
@@ -88,6 +95,12 @@ async fn auth_server_secured(db_url: String, address: String) -> Result<(), Box<
     let token_server = TokenServer::new(auth_db.clone()).with_validator();
     let auth_server = AuthServer::new(auth_db.clone());
 
+    let api_server = tonic_web::enable(ApiServiceServer::with_interceptor(api_server, interceptor));
+    let role_server = tonic_web::enable(RoleServiceServer::with_interceptor(role_server, interceptor));
+    let user_server = tonic_web::enable(UserServiceServer::with_interceptor(user_server, interceptor));
+    let token_server = tonic_web::enable(TokenServiceServer::with_interceptor(token_server, interceptor));
+    let auth_server = tonic_web::enable(AuthServiceServer::new(auth_server));
+
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(descriptor::api::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::role::DESCRIPTOR_SET)
@@ -97,11 +110,12 @@ async fn auth_server_secured(db_url: String, address: String) -> Result<(), Box<
         .build();
 
     tonic::transport::Server::builder()
-        .add_service(ApiServiceServer::with_interceptor(api_server, interceptor))
-        .add_service(RoleServiceServer::with_interceptor(role_server, interceptor))
-        .add_service(UserServiceServer::with_interceptor(user_server, interceptor))
-        .add_service(TokenServiceServer::with_interceptor(token_server, interceptor))
-        .add_service(AuthServiceServer::new(auth_server))
+        .accept_http1(true)
+        .add_service(api_server)
+        .add_service(role_server)
+        .add_service(user_server)
+        .add_service(token_server)
+        .add_service(auth_server)
         .add_service(reflection_service?)
         .serve(addr)
         .await?;

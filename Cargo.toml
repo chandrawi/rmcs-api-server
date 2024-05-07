@@ -29,6 +29,7 @@ tokio = { version = "1.35.0", features = ["rt-multi-thread", "macros"] }
 prost = "0.12.3"
 tonic = "0.10.2"
 tonic-reflection = "0.10.2"
+tonic-web = "0.10.2"
 dotenvy = "0.15.7"
 chrono = { version = "0.4.31", default-features = false, features = ["clock", "iana-time-zone", "oldtime", "std"] }
 uuid = { version = "1.6.1", features = ["v4"] }

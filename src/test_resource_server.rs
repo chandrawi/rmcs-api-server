@@ -96,14 +96,23 @@ async fn resource_server(db_url: String, address: String) -> Result<(), Box<dyn 
         .register_encoded_file_descriptor_set(descriptor::log::DESCRIPTOR_SET)
         .build();
 
+    let model_server = tonic_web::enable(ModelServiceServer::new(model_server));
+    let device_server = tonic_web::enable(DeviceServiceServer::new(device_server));
+    let group_server = tonic_web::enable(GroupServiceServer::new(group_server));
+    let data_server = tonic_web::enable(DataServiceServer::new(data_server));
+    let buffer_server = tonic_web::enable(BufferServiceServer::new(buffer_server));
+    let slice_server = tonic_web::enable(SliceServiceServer::new(slice_server));
+    let log_server = tonic_web::enable(LogServiceServer::new(log_server));
+
     tonic::transport::Server::builder()
-        .add_service(ModelServiceServer::new(model_server))
-        .add_service(DeviceServiceServer::new(device_server))
-        .add_service(GroupServiceServer::new(group_server))
-        .add_service(DataServiceServer::new(data_server))
-        .add_service(BufferServiceServer::new(buffer_server))
-        .add_service(SliceServiceServer::new(slice_server))
-        .add_service(LogServiceServer::new(log_server))
+        .accept_http1(true)
+        .add_service(model_server)
+        .add_service(device_server)
+        .add_service(group_server)
+        .add_service(data_server)
+        .add_service(buffer_server)
+        .add_service(slice_server)
+        .add_service(log_server)
         .add_service(reflection_service?)
         .serve(addr)
         .await?;
@@ -125,20 +134,21 @@ async fn resource_server_secured(db_url: String, address: String, auth_address: 
         .collect();
 
     let resource_db = Resource::new_with_url(&db_url).await;
-    let model_server = ModelServer::new(resource_db.clone())
-        .with_validator(&token_key, &accesses);
-    let device_server = DeviceServer::new(resource_db.clone())
-        .with_validator(&token_key, &accesses);
-    let group_server = GroupServer::new(resource_db.clone())
-        .with_validator(&token_key, &accesses);
-    let data_server = DataServer::new(resource_db.clone())
-        .with_validator(&token_key, &accesses);
-    let buffer_server = BufferServer::new(resource_db.clone())
-        .with_validator(&token_key, &accesses);
-    let slice_server = SliceServer::new(resource_db.clone())
-        .with_validator(&token_key, &accesses);
-    let log_server = LogServer::new(resource_db.clone())
-        .with_validator(&token_key, &accesses);
+    let model_server = ModelServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+    let device_server = DeviceServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+    let group_server = GroupServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+    let data_server = DataServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+    let buffer_server = BufferServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+    let slice_server = SliceServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+    let log_server = LogServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+
+    let model_server = tonic_web::enable(ModelServiceServer::with_interceptor(model_server, interceptor));
+    let device_server = tonic_web::enable(DeviceServiceServer::with_interceptor(device_server, interceptor));
+    let group_server = tonic_web::enable(GroupServiceServer::with_interceptor(group_server, interceptor));
+    let data_server = tonic_web::enable(DataServiceServer::with_interceptor(data_server, interceptor));
+    let buffer_server = tonic_web::enable(BufferServiceServer::with_interceptor(buffer_server, interceptor));
+    let slice_server = tonic_web::enable(SliceServiceServer::with_interceptor(slice_server, interceptor));
+    let log_server = tonic_web::enable(LogServiceServer::with_interceptor(log_server, interceptor));
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(descriptor::model::DESCRIPTOR_SET)
@@ -151,13 +161,14 @@ async fn resource_server_secured(db_url: String, address: String, auth_address: 
         .build();
 
     tonic::transport::Server::builder()
-        .add_service(ModelServiceServer::with_interceptor(model_server, interceptor))
-        .add_service(DeviceServiceServer::with_interceptor(device_server, interceptor))
-        .add_service(GroupServiceServer::with_interceptor(group_server, interceptor))
-        .add_service(DataServiceServer::with_interceptor(data_server, interceptor))
-        .add_service(BufferServiceServer::with_interceptor(buffer_server, interceptor))
-        .add_service(SliceServiceServer::with_interceptor(slice_server, interceptor))
-        .add_service(LogServiceServer::with_interceptor(log_server, interceptor))
+        .accept_http1(true)
+        .add_service(model_server)
+        .add_service(device_server)
+        .add_service(group_server)
+        .add_service(data_server)
+        .add_service(buffer_server)
+        .add_service(slice_server)
+        .add_service(log_server)
         .add_service(reflection_service?)
         .serve(addr)
         .await?;
