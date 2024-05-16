@@ -5,7 +5,8 @@ pub mod interceptor;
 pub mod auth;
 pub mod test;
 
-use rsa::{RsaPrivateKey, Pkcs1v15Encrypt, RsaPublicKey};
+use sha2::Sha256;
+use rsa::{RsaPrivateKey, RsaPublicKey, Oaep};
 use pkcs8::{DecodePublicKey, EncodePublicKey};
 use argon2::{Argon2, PasswordVerifier, password_hash::PasswordHash};
 use rand::thread_rng;
@@ -33,12 +34,14 @@ pub fn import_public_key(pub_der: &[u8]) -> Result<RsaPublicKey, spki::Error>
 
 pub fn decrypt_message(ciphertext: &[u8], priv_key: RsaPrivateKey) -> Result<Vec<u8>, rsa::Error>
 {
-    priv_key.decrypt(Pkcs1v15Encrypt, ciphertext)
+    let padding = Oaep::new_with_mgf_hash::<Sha256, Sha256>();
+    priv_key.decrypt(padding, ciphertext)
 }
 
 pub fn encrypt_message(message: &[u8], pub_key: RsaPublicKey) -> Result<Vec<u8>, rsa::Error>
 {
-    pub_key.encrypt(&mut thread_rng(), Pkcs1v15Encrypt, message)
+    let padding = Oaep::new_with_mgf_hash::<Sha256, Sha256>();
+    pub_key.encrypt(&mut thread_rng(), padding, message)
 }
 
 pub(crate) fn verify_password(password: &[u8], hash: &str) -> Result<(), argon2::password_hash::Error>
