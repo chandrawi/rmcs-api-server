@@ -4,7 +4,7 @@ use rmcs_resource_db::{Resource, DataType, ConfigType, ConfigValue};
 use rmcs_resource_api::model::model_service_server::ModelService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::model::{
-    ModelSchema, ModelId, ModelName, ModelCategory, ModelNameCategory, ModelUpdate, ModelTypes,
+    ModelSchema, ModelId, ModelName, ModelCategory, ModelNameCategory, TypeId, ModelUpdate,
     ConfigSchema, ConfigId, ConfigUpdate,
     ModelReadResponse, ModelListResponse, ModelCreateResponse, ModelChangeResponse,
     ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse
@@ -15,7 +15,7 @@ use super::{
     READ_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
 };
 use super::{
-    MODEL_NOT_FOUND, MODEL_CREATE_ERR, MODEL_UPDATE_ERR, MODEL_DELETE_ERR, ADD_TYPE_ERR, RMV_TYPE_ERR,
+    MODEL_NOT_FOUND, MODEL_CREATE_ERR, MODEL_UPDATE_ERR, MODEL_DELETE_ERR,
     CFG_NOT_FOUND, CFG_CREATE_ERR, CFG_UPDATE_ERR, CFG_DELETE_ERR
 };
 
@@ -94,13 +94,30 @@ impl ModelService for ModelServer {
         Ok(Response::new(ModelListResponse { results }))
     }
 
+    async fn list_model_by_type(&self, request: Request<TypeId>)
+        -> Result<Response<ModelListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_MODEL)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_model_by_type(
+            Uuid::from_slice(&request.id).unwrap_or_default()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+        };
+        Ok(Response::new(ModelListResponse { results }))
+    }
+
     async fn create_model(&self, request: Request<ModelSchema>)
         -> Result<Response<ModelCreateResponse>, Status>
     {
         self.validate(request.extensions(), CREATE_MODEL)?;
         let request = request.into_inner();
+        let data_type: Vec<DataType> = request.data_type.into_iter().map(|ty| DataType::from(ty as i16)).collect();
         let result = self.resource_db.create_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
+            &data_type,
             &request.category,
             &request.name,
             Some(&request.description)
@@ -117,8 +134,10 @@ impl ModelService for ModelServer {
     {
         self.validate(request.extensions(), UPDATE_MODEL)?;
         let request = request.into_inner();
+        let data_type: Vec<DataType> = request.data_type.into_iter().map(|ty| DataType::from(ty as i16)).collect();
         let result = self.resource_db.update_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
+            Some(&data_type),
             request.category.as_deref(),
             request.name.as_deref(),
             request.description.as_deref()
@@ -139,37 +158,6 @@ impl ModelService for ModelServer {
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(MODEL_DELETE_ERR))
-        };
-        Ok(Response::new(ModelChangeResponse { }))
-    }
-
-    async fn add_model_type(&self, request: Request<ModelTypes>)
-        -> Result<Response<ModelChangeResponse>, Status>
-    {
-        self.validate(request.extensions(), CHANGE_MODEL_TYPE)?;
-        let request = request.into_inner();
-        let result = self.resource_db.add_model_type(
-            Uuid::from_slice(&request.id).unwrap_or_default(),
-            request.types.into_iter().map(|e| {
-                DataType::from(common::DataType::try_from(e).unwrap_or_default())
-            }).collect::<Vec<DataType>>().as_ref()
-        ).await;
-        match result {
-            Ok(_) => (),
-            Err(_) => return Err(Status::internal(ADD_TYPE_ERR))
-        };
-        Ok(Response::new(ModelChangeResponse { }))
-    }
-
-    async fn remove_model_type(&self, request: Request<ModelId>)
-        -> Result<Response<ModelChangeResponse>, Status>
-    {
-        self.validate(request.extensions(), CHANGE_MODEL_TYPE)?;
-        let request = request.into_inner();
-        let result = self.resource_db.remove_model_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
-        match result {
-            Ok(_) => (),
-            Err(_) => return Err(Status::internal(RMV_TYPE_ERR))
         };
         Ok(Response::new(ModelChangeResponse { }))
     }

@@ -90,7 +90,6 @@ const RMV_MEMBER_ERR: &str = "remove group member error";
 const DATA_NOT_FOUND: &str = "requested data not found";
 const DATA_CREATE_ERR: &str = "create data error";
 const DATA_DELETE_ERR: &str = "delete data error";
-const DATA_MODEL_NOT_FOUND: &str = "requested data model not found";
 const BUFFER_NOT_FOUND: &str = "requested buffer not found";
 const BUFFER_CREATE_ERR: &str = "create buffer error";
 const BUFFER_UPDATE_ERR: &str = "update buffer error";

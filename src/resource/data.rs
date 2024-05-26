@@ -6,15 +6,14 @@ use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::data::{
     DataSchema, DataId, DataTime, DataRange, DataNumber,
-    ModelId, DataIdModel, DataTimeModel, DataRangeModel, DataNumberModel,
-    DataReadResponse, DataListResponse, DataModelResponse, DataChangeResponse, DataSchemaModel
+    DataReadResponse, DataListResponse, DataChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
     READ_DATA, GET_DATA_MODEL, READ_DATA_WITH_MODEL, CREATE_DATA, DELETE_DATA
 };
 use super::{
-    DATA_NOT_FOUND, DATA_CREATE_ERR, DATA_DELETE_ERR, DATA_MODEL_NOT_FOUND
+    DATA_NOT_FOUND, DATA_CREATE_ERR, DATA_DELETE_ERR
 };
 
 #[derive(Debug)]
@@ -142,142 +141,6 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn get_data_model(&self, request: Request<ModelId>)
-        -> Result<Response<DataModelResponse>, Status>
-    {
-        self.validate(request.extensions(), GET_DATA_MODEL)?;
-        let request = request.into_inner();
-        let result = self.resource_db.get_data_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
-        let result = match result {
-            Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(DATA_MODEL_NOT_FOUND))
-        };
-        Ok(Response::new(DataModelResponse { result }))
-    }
-
-    async fn read_data_with_model(&self, request: Request<DataIdModel>)
-        -> Result<Response<DataReadResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataReadResponse { result: None }));
-        }
-        let result = self.resource_db.read_data_with_model(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
-        ).await;
-        let result = match result {
-            Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
-        };
-        Ok(Response::new(DataReadResponse { result }))
-    }
-
-    async fn list_data_with_model_by_time(&self, request: Request<DataTimeModel>)
-        -> Result<Response<DataListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataListResponse { results: Vec::new() }));
-        }
-        let result = self.resource_db.list_data_with_model_by_time(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
-        };
-        Ok(Response::new(DataListResponse { results }))
-    }
-
-    async fn list_data_with_model_by_last_time(&self, request: Request<DataTimeModel>)
-        -> Result<Response<DataListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataListResponse { results: Vec::new() }));
-        }
-        let result = self.resource_db.list_data_with_model_by_last_time(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
-        };
-        Ok(Response::new(DataListResponse { results }))
-    }
-
-    async fn list_data_with_model_by_range_time(&self, request: Request<DataRangeModel>)
-        -> Result<Response<DataListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataListResponse { results: Vec::new() }));
-        }
-        let result = self.resource_db.list_data_with_model_by_range_time(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
-        };
-        Ok(Response::new(DataListResponse { results }))
-    }
-
-    async fn list_data_with_model_by_number_before(&self, request: Request<DataNumberModel>)
-        -> Result<Response<DataListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataListResponse { results: Vec::new() }));
-        }
-        let result = self.resource_db.list_data_with_model_by_number_before(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
-        };
-        Ok(Response::new(DataListResponse { results }))
-    }
-
-    async fn list_data_with_model_by_number_after(&self, request: Request<DataNumberModel>)
-        -> Result<Response<DataListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_DATA_WITH_MODEL)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataListResponse { results: Vec::new() }));
-        }
-        let result = self.resource_db.list_data_with_model_by_number_after(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
-        };
-        Ok(Response::new(DataListResponse { results }))
-    }
-
     async fn create_data(&self, request: Request<DataSchema>)
         -> Result<Response<DataChangeResponse>, Status>
     {
@@ -286,32 +149,6 @@ impl DataService for DataServer {
         let result = self.resource_db.create_data(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            ArrayDataValue::from_bytes(
-                &request.data_bytes,
-                request.data_type.into_iter().map(|e| {
-                    DataType::from(common::DataType::try_from(e).unwrap_or_default())
-                }).collect::<Vec<DataType>>().as_slice()
-            ).to_vec()
-        ).await;
-        match result {
-            Ok(_) => (),
-            Err(_) => return Err(Status::internal(DATA_CREATE_ERR))
-        };
-        Ok(Response::new(DataChangeResponse { }))
-    }
-
-    async fn create_data_with_model(&self, request: Request<DataSchemaModel>)
-        -> Result<Response<DataChangeResponse>, Status>
-    {
-        self.validate(request.extensions(), CREATE_DATA)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataChangeResponse { }));
-        }
-        let result = self.resource_db.create_data_with_model(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
@@ -336,26 +173,6 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-        ).await;
-        match result {
-            Ok(_) => (),
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
-        };
-        Ok(Response::new(DataChangeResponse { }))
-    }
-
-    async fn delete_data_with_model(&self, request: Request<DataIdModel>)
-        -> Result<Response<DataChangeResponse>, Status>
-    {
-        self.validate(request.extensions(), DELETE_DATA)?;
-        let request = request.into_inner();
-        if let None = request.model {
-            return Ok(Response::new(DataChangeResponse { }));
-        }
-        let result = self.resource_db.delete_data_with_model(
-            request.model.unwrap().into(),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
         ).await;
         match result {
             Ok(_) => (),
