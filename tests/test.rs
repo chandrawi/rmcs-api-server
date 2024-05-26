@@ -12,7 +12,7 @@ mod tests {
     use rmcs_auth_api::auth::auth_service_client::AuthServiceClient;
     use rmcs_auth_api::auth::{UserKeyRequest, UserLoginRequest, UserRefreshRequest, UserLogoutRequest};
     use rmcs_resource_api::model::model_service_client::ModelServiceClient;
-    use rmcs_resource_api::model::{ModelSchema, ModelTypes, ModelId};
+    use rmcs_resource_api::model::{ModelSchema, ModelId};
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
     use rmcs_api_server::utility::config::{ROOT_NAME, ROOT_DATA};
     use rmcs_api_server::utility::interceptor::TokenInterceptor;
@@ -222,7 +222,7 @@ mod tests {
             category: String::from("UPLINK"),
             name: String::from("name"),
             description: String::new(),
-            types: vec![1, 1],
+            data_type: vec![2, 6],
             configs: Vec::new()
         };
         let request = Request::new(schema.clone());
@@ -232,15 +232,8 @@ mod tests {
         let try_response = model_service_admin.create_model(request).await;
         assert!(try_response.is_ok());
 
-        // add model type using admin service
-        let model_id = try_response.unwrap().into_inner().id;
-        let request = Request::new(ModelTypes {
-            id: model_id.clone(),
-            types: vec![2, 6]
-        });
-        model_service_admin.add_model_type(request).await.unwrap();
-
         // read created model using user service
+        let model_id = try_response.unwrap().into_inner().id;
         let request = Request::new(ModelId {
             id: model_id.clone()
         });
@@ -262,8 +255,6 @@ mod tests {
         let id = ModelId {
             id: model_id.clone()
         };
-        let request = Request::new(id.clone());
-        model_service_admin.remove_model_type(request).await.unwrap();
         let request = Request::new(id.clone());
         let try_response = model_service_admin.delete_model(request).await;
         assert!(try_response.is_ok());
