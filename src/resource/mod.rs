@@ -11,7 +11,6 @@ const READ_MODEL: &str = "read_model";
 const CREATE_MODEL: &str = "create_model";
 const UPDATE_MODEL: &str = "update_model";
 const DELETE_MODEL: &str = "delete_model";
-const CHANGE_MODEL_TYPE: &str = "change_model_type";
 const READ_MODEL_CONFIG: &str = "read_model_config";
 const CREATE_MODEL_CONFIG: &str = "create_model_config";
 const UPDATE_MODEL_CONFIG: &str = "update_model_config";
@@ -29,7 +28,7 @@ const READ_TYPE: &str = "read_type";
 const CREATE_TYPE: &str = "create_type";
 const UPDATE_TYPE: &str = "update_type";
 const DELETE_TYPE: &str = "delete_type";
-const CHANGE_TYPE_MODEL: &str = "change_model_type";
+const CHANGE_TYPE_MODEL: &str = "change_type_model";
 // group service procedure names
 const READ_GROUP: &str = "read_group";
 const CREATE_GROUP: &str = "create_group";
@@ -38,8 +37,6 @@ const DELETE_GROUP: &str = "delete_group";
 const CHANGE_GROUP_MEMBER: &str = "change_group_member";
 // data service procedure names
 const READ_DATA: &str = "read_data";
-const GET_DATA_MODEL: &str = "get_data_model";
-const READ_DATA_WITH_MODEL: &str = "read_data_with_model";
 const CREATE_DATA: &str = "create_data";
 const DELETE_DATA: &str = "delete_data";
 // buffer service procedure names

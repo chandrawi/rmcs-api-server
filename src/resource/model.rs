@@ -11,7 +11,7 @@ use rmcs_resource_api::model::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_MODEL, CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, CHANGE_MODEL_TYPE,
+    READ_MODEL, CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL,
     READ_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
 };
 use super::{
@@ -114,7 +114,7 @@ impl ModelService for ModelServer {
     {
         self.validate(request.extensions(), CREATE_MODEL)?;
         let request = request.into_inner();
-        let data_type: Vec<DataType> = request.data_type.into_iter().map(|ty| DataType::from(ty as i16)).collect();
+        let data_type: Vec<DataType> = request.data_type.into_iter().map(|ty| DataType::from(ty)).collect();
         let result = self.resource_db.create_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
             &data_type,
@@ -134,10 +134,14 @@ impl ModelService for ModelServer {
     {
         self.validate(request.extensions(), UPDATE_MODEL)?;
         let request = request.into_inner();
-        let data_type: Vec<DataType> = request.data_type.into_iter().map(|ty| DataType::from(ty as i16)).collect();
+        let data_type: Option<Vec<DataType>> = if request.data_type_flag {
+            Some(request.data_type.into_iter().map(|ty| DataType::from(ty)).collect())
+        } else {
+            None
+        };
         let result = self.resource_db.update_model(
             Uuid::from_slice(&request.id).unwrap_or_default(),
-            Some(&data_type),
+            data_type.as_deref(),
             request.category.as_deref(),
             request.name.as_deref(),
             request.description.as_deref()
@@ -252,7 +256,7 @@ impl AccessValidator for ModelServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_MODEL, CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL, CHANGE_MODEL_TYPE,
+            READ_MODEL, CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL,
             READ_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
         ];
         self.token_key = token_key.to_owned();

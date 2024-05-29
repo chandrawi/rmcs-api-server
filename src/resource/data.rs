@@ -10,7 +10,7 @@ use rmcs_resource_api::data::{
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
-    READ_DATA, GET_DATA_MODEL, READ_DATA_WITH_MODEL, CREATE_DATA, DELETE_DATA
+    READ_DATA, CREATE_DATA, DELETE_DATA
 };
 use super::{
     DATA_NOT_FOUND, DATA_CREATE_ERR, DATA_DELETE_ERR
@@ -187,7 +187,7 @@ impl AccessValidator for DataServer {
 
     fn with_validator(mut self, token_key: &[u8], accesses: &[AccessSchema]) -> Self {
         const PROCEDURES: &[&str] = &[
-            READ_DATA, GET_DATA_MODEL, READ_DATA_WITH_MODEL, CREATE_DATA, DELETE_DATA
+            READ_DATA, CREATE_DATA, DELETE_DATA
         ];
         self.token_key = token_key.to_owned();
         self.accesses = Self::construct_accesses(accesses, PROCEDURES);
