@@ -14,6 +14,10 @@ use rmcs_api_server::auth::auth::AuthServer;
 use rmcs_api_server::utility::interceptor::interceptor;
 use rmcs_api_server::utility::validator::AuthValidator;
 use rmcs_api_server::utility::config::{ROOT_DATA, RootData};
+use tonic::transport::Server;
+use tonic_web::GrpcWebLayer;
+use http::{header::HeaderName, Method};
+use tower_http::cors::{CorsLayer, Any};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,11 +45,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token_server = TokenServer::new(auth_db.clone()).with_validator();
     let auth_server = AuthServer::new(auth_db.clone());
 
-    let api_server = tonic_web::enable(ApiServiceServer::with_interceptor(api_server, interceptor));
-    let role_server = tonic_web::enable(RoleServiceServer::with_interceptor(role_server, interceptor));
-    let user_server = tonic_web::enable(UserServiceServer::with_interceptor(user_server, interceptor));
-    let token_server = tonic_web::enable(TokenServiceServer::with_interceptor(token_server, interceptor));
-    let auth_server = tonic_web::enable(AuthServiceServer::new(auth_server));
+    let api_server = ApiServiceServer::with_interceptor(api_server, interceptor);
+    let role_server = RoleServiceServer::with_interceptor(role_server, interceptor);
+    let user_server = UserServiceServer::with_interceptor(user_server, interceptor);
+    let token_server = TokenServiceServer::with_interceptor(token_server, interceptor);
+    let auth_server = AuthServiceServer::new(auth_server);
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(descriptor::api::DESCRIPTOR_SET)
@@ -55,8 +59,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(descriptor::auth::DESCRIPTOR_SET)
         .build();
 
-    tonic::transport::Server::builder()
+    Server::builder()
         .accept_http1(true)
+        .layer(CorsLayer::new()
+            .allow_origin(Any)
+            .allow_headers(Any)
+            .allow_methods([Method::POST])
+            .expose_headers([HeaderName::from_static("grpc-status"), HeaderName::from_static("grpc-message")])
+        )
+        .layer(GrpcWebLayer::new())
         .add_service(api_server)
         .add_service(role_server)
         .add_service(user_server)

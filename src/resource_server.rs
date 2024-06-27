@@ -19,6 +19,10 @@ use rmcs_api_server::utility::interceptor::interceptor;
 use rmcs_api_server::utility::validator::{AccessValidator, AccessSchema};
 use rmcs_api_server::utility::config::{ROOT_DATA, RootData};
 use rmcs_api_server::utility::auth::api_login;
+use tonic::transport::Server;
+use tonic_web::GrpcWebLayer;
+use http::{header::HeaderName, Method};
+use tower_http::cors::{CorsLayer, Any};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -65,13 +69,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let slice_server = SliceServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
     let log_server = LogServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
 
-    let model_server = tonic_web::enable(ModelServiceServer::with_interceptor(model_server, interceptor));
-    let device_server = tonic_web::enable(DeviceServiceServer::with_interceptor(device_server, interceptor));
-    let group_server = tonic_web::enable(GroupServiceServer::with_interceptor(group_server, interceptor));
-    let data_server = tonic_web::enable(DataServiceServer::with_interceptor(data_server, interceptor));
-    let buffer_server = tonic_web::enable(BufferServiceServer::with_interceptor(buffer_server, interceptor));
-    let slice_server = tonic_web::enable(SliceServiceServer::with_interceptor(slice_server, interceptor));
-    let log_server = tonic_web::enable(LogServiceServer::with_interceptor(log_server, interceptor));
+    let model_server = ModelServiceServer::with_interceptor(model_server, interceptor);
+    let device_server = DeviceServiceServer::with_interceptor(device_server, interceptor);
+    let group_server = GroupServiceServer::with_interceptor(group_server, interceptor);
+    let data_server = DataServiceServer::with_interceptor(data_server, interceptor);
+    let buffer_server = BufferServiceServer::with_interceptor(buffer_server, interceptor);
+    let slice_server = SliceServiceServer::with_interceptor(slice_server, interceptor);
+    let log_server = LogServiceServer::with_interceptor(log_server, interceptor);
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(descriptor::model::DESCRIPTOR_SET)
@@ -83,8 +87,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(descriptor::log::DESCRIPTOR_SET)
         .build();
 
-    tonic::transport::Server::builder()
+    Server::builder()
         .accept_http1(true)
+        .layer(CorsLayer::new()
+            .allow_origin(Any)
+            .allow_headers(Any)
+            .allow_methods([Method::POST])
+            .expose_headers([HeaderName::from_static("grpc-status"), HeaderName::from_static("grpc-message")])
+        )
+        .layer(GrpcWebLayer::new())
         .add_service(model_server)
         .add_service(device_server)
         .add_service(group_server)
