@@ -25,22 +25,22 @@ rmcs-auth-db = { path = "../rmcs-auth-db" }
 rmcs-resource-api = { path = "../rmcs-resource-api/rust" }
 rmcs-resource-db = { path = "../rmcs-resource-db" }
 sqlx = { version = "0.7.4", features = ["runtime-tokio-rustls", "postgres", "migrate", "uuid"] }
-tokio = { version = "1.37.0", features = ["rt-multi-thread", "macros"] }
-prost = "0.12.6"
-tonic = "0.11.0"
-tonic-reflection = "0.11.0"
-tonic-web = "0.11.0"
+tokio = { version = "1.38.0", features = ["rt-multi-thread", "macros"] }
+prost = "0.13.1"
+tonic = "0.12.0"
+tonic-reflection = "0.12.0"
+tonic-web = "0.12.0"
 dotenvy = "0.15.7"
 chrono = { version = "0.4.38", default-features = false, features = ["clock", "iana-time-zone", "oldtime", "std"] }
-uuid = { version = "1.8.0", features = ["v4"] }
+uuid = { version = "1.10.0", features = ["v4"] }
 rand = "0.8.5"
-serde = "1.0.203"
+serde = "1.0.204"
 rsa = "0.9.6"
 pkcs8 = "0.10.2"
 spki = "0.7.3"
 sha2 = "0.10.8"
 argon2 = "0.5.3"
 jsonwebtoken = { version = "9.3.0", default-features = false }
-clap = { version = "4.5.4", features = ["derive"] }
-tower-http = { version = "0.4.4", features = ["cors"] }
-http = "0.2.11"
+clap = { version = "4.5.9", features = ["derive"] }
+tower-http = { version = "0.5.2", features = ["cors"] }
+http = "1.1.0"

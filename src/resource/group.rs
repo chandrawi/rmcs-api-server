@@ -3,7 +3,7 @@ use uuid::Uuid;
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::group::group_service_server::GroupService;
 use rmcs_resource_api::group::{
-    GroupModelSchema, GroupDeviceSchema, GroupId, GroupName, GroupCategory, GroupNameCategory, GroupUpdate,
+    GroupModelSchema, GroupDeviceSchema, GroupId, GroupIds, GroupName, GroupCategory, GroupNameCategory, GroupUpdate,
     GroupModel, GroupDevice,
     GroupModelReadResponse, GroupModelListResponse, GroupCreateResponse, GroupChangeResponse,
     GroupDeviceReadResponse, GroupDeviceListResponse
@@ -54,6 +54,21 @@ impl GroupService for GroupServer {
         self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
         let result = self.resource_db.list_group_model_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+        };
+        Ok(Response::new(GroupModelListResponse { results }))
+    }
+
+    async fn list_group_model_by_ids(&self, request: Request<GroupIds>)
+        -> Result<Response<GroupModelListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_GROUP)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_group_model_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
@@ -182,6 +197,21 @@ impl GroupService for GroupServer {
             Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
         Ok(Response::new(GroupDeviceReadResponse { result }))
+    }
+
+    async fn list_group_device_by_ids(&self, request: Request<GroupIds>)
+        -> Result<Response<GroupDeviceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_GROUP)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_group_device_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+        };
+        Ok(Response::new(GroupDeviceListResponse { results }))
     }
 
     async fn list_group_device_by_name(&self, request: Request<GroupName>)
@@ -318,6 +348,21 @@ impl GroupService for GroupServer {
             Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
         };
         Ok(Response::new(GroupDeviceReadResponse { result }))
+    }
+
+    async fn list_group_gateway_by_ids(&self, request: Request<GroupIds>)
+        -> Result<Response<GroupDeviceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_GROUP)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_group_gateway_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+        };
+        Ok(Response::new(GroupDeviceListResponse { results }))
     }
 
     async fn list_group_gateway_by_name(&self, request: Request<GroupName>)

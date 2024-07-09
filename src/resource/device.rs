@@ -4,10 +4,10 @@ use rmcs_resource_db::{Resource, ConfigType, ConfigValue};
 use rmcs_resource_api::device::device_service_server::DeviceService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::device::{
-    DeviceSchema, DeviceId, SerialNumber, DeviceName, DeviceGatewayName, DeviceGatewayType, DeviceUpdate,
-    GatewaySchema, GatewayId, GatewayName, GatewayUpdate,
+    DeviceSchema, DeviceId, DeviceIds, SerialNumber, DeviceName, DeviceGatewayName, DeviceGatewayType, DeviceUpdate,
+    GatewaySchema, GatewayId, GatewayIds, GatewayName, GatewayUpdate,
     ConfigSchema, ConfigId, ConfigUpdate,
-    TypeSchema, TypeId, TypeName, TypeModel, TypeUpdate,
+    TypeSchema, TypeId, TypeIds, TypeName, TypeModel, TypeUpdate,
     DeviceReadResponse, DeviceListResponse, DeviceCreateResponse, DeviceChangeResponse,
     GatewayReadResponse, GatewayListResponse, GatewayCreateResponse, GatewayChangeResponse,
     ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse,
@@ -70,6 +70,21 @@ impl DeviceService for DeviceServer {
             Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
         };
         Ok(Response::new(DeviceReadResponse { result }))
+    }
+
+    async fn list_device_by_ids(&self, request: Request<DeviceIds>)
+        -> Result<Response<DeviceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DEVICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_device_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+        };
+        Ok(Response::new(DeviceListResponse { results }))
     }
 
     async fn list_device_by_gateway(&self, request: Request<GatewayId>)
@@ -220,6 +235,21 @@ impl DeviceService for DeviceServer {
             Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
         };
         Ok(Response::new(GatewayReadResponse { result }))
+    }
+
+    async fn list_gateway_by_ids(&self, request: Request<GatewayIds>)
+        -> Result<Response<GatewayListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DEVICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_gateway_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+        };
+        Ok(Response::new(GatewayListResponse { results }))
     }
 
     async fn list_gateway_by_type(&self, request: Request<TypeId>)
@@ -476,6 +506,21 @@ impl DeviceService for DeviceServer {
             Err(_) => return Err(Status::not_found(TYPE_NOT_FOUND))
         };
         Ok(Response::new(TypeReadResponse { result }))
+    }
+
+    async fn list_type_by_ids(&self, request: Request<TypeIds>)
+        -> Result<Response<TypeListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DEVICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_type_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+        };
+        Ok(Response::new(TypeListResponse { results }))
     }
 
     async fn list_type_by_name(&self, request: Request<TypeName>)
