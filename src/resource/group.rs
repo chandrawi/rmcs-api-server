@@ -13,7 +13,7 @@ use super::{
     READ_GROUP, CREATE_GROUP, UPDATE_GROUP, DELETE_GROUP, CHANGE_GROUP_MEMBER
 };
 use super::{
-    GROUP_NOT_FOUND, GROUP_CREATE_ERR, GROUP_UPDATE_ERR, GROUP_DELETE_ERR, ADD_MEMBER_ERR, RMV_MEMBER_ERR
+    GROUP_NOT_FOUND, GROUP_CREATE_ERR, GROUP_UPDATE_ERR, GROUP_DELETE_ERR, GROUP_ADD_ERR, GROUP_RMV_ERR
 };
 
 pub struct GroupServer {
@@ -165,7 +165,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ADD_MEMBER_ERR))
+            Err(_) => return Err(Status::internal(GROUP_ADD_ERR))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -181,7 +181,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(RMV_MEMBER_ERR))
+            Err(_) => return Err(Status::internal(GROUP_RMV_ERR))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -316,7 +316,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ADD_MEMBER_ERR))
+            Err(_) => return Err(Status::internal(GROUP_ADD_ERR))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -332,7 +332,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(RMV_MEMBER_ERR))
+            Err(_) => return Err(Status::internal(GROUP_RMV_ERR))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -467,7 +467,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ADD_MEMBER_ERR))
+            Err(_) => return Err(Status::internal(GROUP_ADD_ERR))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -483,7 +483,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(RMV_MEMBER_ERR))
+            Err(_) => return Err(Status::internal(GROUP_RMV_ERR))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }

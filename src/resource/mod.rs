@@ -1,6 +1,7 @@
 pub mod model;
 pub mod device;
 pub mod group;
+pub mod set;
 pub mod data;
 pub mod buffer;
 pub mod slice;
@@ -35,6 +36,12 @@ const CREATE_GROUP: &str = "create_group";
 const UPDATE_GROUP: &str = "update_group";
 const DELETE_GROUP: &str = "delete_group";
 const CHANGE_GROUP_MEMBER: &str = "change_group_member";
+// set service procedure names
+const READ_SET: &str = "read_set";
+const CREATE_SET: &str = "create_set";
+const UPDATE_SET: &str = "update_set";
+const DELETE_SET: &str = "delete_set";
+const CHANGE_SET_MEMBER: &str = "change_set_member";
 // data service procedure names
 const READ_DATA: &str = "read_data";
 const CREATE_DATA: &str = "create_data";
@@ -82,8 +89,15 @@ const GROUP_NOT_FOUND: &str = "requested group not found";
 const GROUP_CREATE_ERR: &str = "create group error";
 const GROUP_UPDATE_ERR: &str = "update group error";
 const GROUP_DELETE_ERR: &str = "delete group error";
-const ADD_MEMBER_ERR: &str = "add group member error";
-const RMV_MEMBER_ERR: &str = "remove group member error";
+const GROUP_ADD_ERR: &str = "add group member error";
+const GROUP_RMV_ERR: &str = "remove group member error";
+const SET_NOT_FOUND: &str = "requested set not found";
+const SET_CREATE_ERR: &str = "create set error";
+const SET_UPDATE_ERR: &str = "update set error";
+const SET_DELETE_ERR: &str = "delete set error";
+const SET_ADD_ERR: &str = "add set member error";
+const SET_RMV_ERR: &str = "remove set member error";
+const SET_SWP_ERR: &str = "swap set member position error";
 const DATA_NOT_FOUND: &str = "requested data not found";
 const DATA_CREATE_ERR: &str = "create data error";
 const DATA_DELETE_ERR: &str = "delete data error";
