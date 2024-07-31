@@ -2,6 +2,7 @@ use rmcs_resource_db::Resource;
 use rmcs_resource_api::model::model_service_server::ModelServiceServer;
 use rmcs_resource_api::device::device_service_server::DeviceServiceServer;
 use rmcs_resource_api::group::group_service_server::GroupServiceServer;
+use rmcs_resource_api::set::set_service_server::SetServiceServer;
 use rmcs_resource_api::data::data_service_server::DataServiceServer;
 use rmcs_resource_api::buffer::buffer_service_server::BufferServiceServer;
 use rmcs_resource_api::slice::slice_service_server::SliceServiceServer;
@@ -10,6 +11,7 @@ use rmcs_resource_api::descriptor;
 use rmcs_api_server::resource::model::ModelServer;
 use rmcs_api_server::resource::device::DeviceServer;
 use rmcs_api_server::resource::group::GroupServer;
+use rmcs_api_server::resource::set::SetServer;
 use rmcs_api_server::resource::data::DataServer;
 use rmcs_api_server::resource::buffer::BufferServer;
 use rmcs_api_server::resource::slice::SliceServer;
@@ -85,28 +87,31 @@ async fn resource_server(db_url: String, address: String) -> Result<(), Box<dyn 
     let model_server = ModelServer::new(resource_db.clone());
     let device_server = DeviceServer::new(resource_db.clone());
     let group_server = GroupServer::new(resource_db.clone());
+    let set_server = SetServer::new(resource_db.clone());
     let data_server = DataServer::new(resource_db.clone());
     let buffer_server = BufferServer::new(resource_db.clone());
     let slice_server = SliceServer::new(resource_db.clone());
     let log_server = LogServer::new(resource_db.clone());
 
+    let model_server = ModelServiceServer::new(model_server);
+    let device_server = DeviceServiceServer::new(device_server);
+    let group_server = GroupServiceServer::new(group_server);
+    let set_server = SetServiceServer::new(set_server);
+    let data_server = DataServiceServer::new(data_server);
+    let buffer_server = BufferServiceServer::new(buffer_server);
+    let slice_server = SliceServiceServer::new(slice_server);
+    let log_server = LogServiceServer::new(log_server);
+
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(descriptor::model::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::device::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::group::DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(descriptor::set::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::data::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::buffer::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::slice::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::log::DESCRIPTOR_SET)
         .build();
-
-    let model_server = ModelServiceServer::new(model_server);
-    let device_server = DeviceServiceServer::new(device_server);
-    let group_server = GroupServiceServer::new(group_server);
-    let data_server = DataServiceServer::new(data_server);
-    let buffer_server = BufferServiceServer::new(buffer_server);
-    let slice_server = SliceServiceServer::new(slice_server);
-    let log_server = LogServiceServer::new(log_server);
 
     Server::builder()
         .accept_http1(true)
@@ -120,6 +125,7 @@ async fn resource_server(db_url: String, address: String) -> Result<(), Box<dyn 
         .add_service(model_server)
         .add_service(device_server)
         .add_service(group_server)
+        .add_service(set_server)
         .add_service(data_server)
         .add_service(buffer_server)
         .add_service(slice_server)
@@ -148,6 +154,7 @@ async fn resource_server_secured(db_url: String, address: String, auth_address: 
     let model_server = ModelServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
     let device_server = DeviceServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
     let group_server = GroupServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
+    let set_server = SetServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
     let data_server = DataServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
     let buffer_server = BufferServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
     let slice_server = SliceServer::new(resource_db.clone()).with_validator(&token_key, &accesses);
@@ -156,6 +163,7 @@ async fn resource_server_secured(db_url: String, address: String, auth_address: 
     let model_server = ModelServiceServer::with_interceptor(model_server, interceptor);
     let device_server = DeviceServiceServer::with_interceptor(device_server, interceptor);
     let group_server = GroupServiceServer::with_interceptor(group_server, interceptor);
+    let set_server = SetServiceServer::with_interceptor(set_server, interceptor);
     let data_server = DataServiceServer::with_interceptor(data_server, interceptor);
     let buffer_server = BufferServiceServer::with_interceptor(buffer_server, interceptor);
     let slice_server = SliceServiceServer::with_interceptor(slice_server, interceptor);
@@ -165,6 +173,7 @@ async fn resource_server_secured(db_url: String, address: String, auth_address: 
         .register_encoded_file_descriptor_set(descriptor::model::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::device::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::group::DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(descriptor::set::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::data::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::buffer::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::slice::DESCRIPTOR_SET)
@@ -183,6 +192,7 @@ async fn resource_server_secured(db_url: String, address: String, auth_address: 
         .add_service(model_server)
         .add_service(device_server)
         .add_service(group_server)
+        .add_service(set_server)
         .add_service(data_server)
         .add_service(buffer_server)
         .add_service(slice_server)

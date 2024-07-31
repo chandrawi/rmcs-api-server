@@ -9,6 +9,7 @@ use rmcs_resource_db::Resource;
 use rmcs_resource_api::model::model_service_server::ModelServiceServer;
 use rmcs_resource_api::device::device_service_server::DeviceServiceServer;
 use rmcs_resource_api::group::group_service_server::GroupServiceServer;
+use rmcs_resource_api::set::set_service_server::SetServiceServer;
 use rmcs_resource_api::data::data_service_server::DataServiceServer;
 use rmcs_resource_api::buffer::buffer_service_server::BufferServiceServer;
 use rmcs_resource_api::slice::slice_service_server::SliceServiceServer;
@@ -22,6 +23,7 @@ use rmcs_api_server::auth::auth::AuthServer;
 use rmcs_api_server::resource::model::ModelServer;
 use rmcs_api_server::resource::device::DeviceServer;
 use rmcs_api_server::resource::group::GroupServer;
+use rmcs_api_server::resource::set::SetServer;
 use rmcs_api_server::resource::data::DataServer;
 use rmcs_api_server::resource::buffer::BufferServer;
 use rmcs_api_server::resource::slice::SliceServer;
@@ -45,6 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model_server = ModelServer::new(resource_db.clone());
     let device_server = DeviceServer::new(resource_db.clone());
     let group_server = GroupServer::new(resource_db.clone());
+    let set_server = SetServer::new(resource_db.clone());
     let data_server = DataServer::new(resource_db.clone());
     let buffer_server = BufferServer::new(resource_db.clone());
     let slice_server = SliceServer::new(resource_db.clone());
@@ -59,6 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(resource_descriptor::model::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::device::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::group::DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(resource_descriptor::set::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::data::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::buffer::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::slice::DESCRIPTOR_SET)
@@ -74,6 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(ModelServiceServer::new(model_server))
         .add_service(DeviceServiceServer::new(device_server))
         .add_service(GroupServiceServer::new(group_server))
+        .add_service(SetServiceServer::new(set_server))
         .add_service(DataServiceServer::new(data_server))
         .add_service(BufferServiceServer::new(buffer_server))
         .add_service(SliceServiceServer::new(slice_server))
