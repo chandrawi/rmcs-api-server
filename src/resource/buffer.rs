@@ -107,7 +107,7 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_first(
-            request.number,
+            request.number as usize,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| BufferStatus::from(s as i16))
@@ -125,7 +125,7 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_last(
-            request.number,
+            request.number as usize,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| BufferStatus::from(s as i16))
