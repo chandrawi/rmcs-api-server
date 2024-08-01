@@ -5,8 +5,8 @@ use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::data::{
-    DataSchema, DataId, DataTime, DataRange, DataNumber, DatasetId, DatasetTime, DatasetRange, DatasetNumber,
-    DataReadResponse, DataListResponse, DataChangeResponse, DatasetReadResponse, DatasetListResponse
+    DataSchema, DataId, DataTime, DataRange, DataNumber, DataSetId, DataSetTime, DataSetRange, DataSetNumber,
+    DataReadResponse, DataListResponse, DataChangeResponse, DataSetReadResponse, DataSetListResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -181,7 +181,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataChangeResponse { }))
     }
 
-    async fn list_data_by_set_time(&self, request: Request<DatasetTime>)
+    async fn list_data_by_set_time(&self, request: Request<DataSetTime>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -197,7 +197,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_set_last_time(&self, request: Request<DatasetTime>)
+    async fn list_data_by_set_last_time(&self, request: Request<DataSetTime>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -213,7 +213,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_set_range_time(&self, request: Request<DatasetRange>)
+    async fn list_data_by_set_range_time(&self, request: Request<DataSetRange>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -230,7 +230,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_set_number_before(&self, request: Request<DatasetNumber>)
+    async fn list_data_by_set_number_before(&self, request: Request<DataSetNumber>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -247,7 +247,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_set_number_after(&self, request: Request<DatasetNumber>)
+    async fn list_data_by_set_number_after(&self, request: Request<DataSetNumber>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -264,12 +264,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn read_dataset(&self, request: Request<DatasetId>)
-        -> Result<Response<DatasetReadResponse>, Status>
+    async fn read_data_set(&self, request: Request<DataSetId>)
+        -> Result<Response<DataSetReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_dataset(
+        let result = self.resource_db.read_data_set(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000)
         ).await;
@@ -277,15 +277,15 @@ impl DataService for DataServer {
             Ok(value) => Some(value.into()),
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
-        Ok(Response::new(DatasetReadResponse { result }))
+        Ok(Response::new(DataSetReadResponse { result }))
     }
 
-    async fn list_dataset_by_time(&self, request: Request<DatasetTime>)
-        -> Result<Response<DatasetListResponse>, Status>
+    async fn list_data_set_by_time(&self, request: Request<DataSetTime>)
+        -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_dataset_by_time(
+        let result = self.resource_db.list_data_set_by_time(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
         ).await;
@@ -293,15 +293,15 @@ impl DataService for DataServer {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
-        Ok(Response::new(DatasetListResponse { results }))
+        Ok(Response::new(DataSetListResponse { results }))
     }
 
-    async fn list_dataset_by_last_time(&self, request: Request<DatasetTime>)
-        -> Result<Response<DatasetListResponse>, Status>
+    async fn list_data_set_by_last_time(&self, request: Request<DataSetTime>)
+        -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_dataset_by_last_time(
+        let result = self.resource_db.list_data_set_by_last_time(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
         ).await;
@@ -309,15 +309,15 @@ impl DataService for DataServer {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
-        Ok(Response::new(DatasetListResponse { results }))
+        Ok(Response::new(DataSetListResponse { results }))
     }
 
-    async fn list_dataset_by_range_time(&self, request: Request<DatasetRange>)
-        -> Result<Response<DatasetListResponse>, Status>
+    async fn list_data_set_by_range_time(&self, request: Request<DataSetRange>)
+        -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_dataset_by_range_time(
+        let result = self.resource_db.list_data_set_by_range_time(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000)
@@ -326,15 +326,15 @@ impl DataService for DataServer {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
-        Ok(Response::new(DatasetListResponse { results }))
+        Ok(Response::new(DataSetListResponse { results }))
     }
 
-    async fn list_dataset_by_number_before(&self, request: Request<DatasetNumber>)
-        -> Result<Response<DatasetListResponse>, Status>
+    async fn list_data_set_by_number_before(&self, request: Request<DataSetNumber>)
+        -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_dataset_by_number_before(
+        let result = self.resource_db.list_data_set_by_number_before(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.number as usize
@@ -343,15 +343,15 @@ impl DataService for DataServer {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
-        Ok(Response::new(DatasetListResponse { results }))
+        Ok(Response::new(DataSetListResponse { results }))
     }
 
-    async fn list_dataset_by_number_after(&self, request: Request<DatasetNumber>)
-        -> Result<Response<DatasetListResponse>, Status>
+    async fn list_data_set_by_number_after(&self, request: Request<DataSetNumber>)
+        -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_dataset_by_number_after(
+        let result = self.resource_db.list_data_set_by_number_after(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.number as usize
@@ -360,7 +360,7 @@ impl DataService for DataServer {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
-        Ok(Response::new(DatasetListResponse { results }))
+        Ok(Response::new(DataSetListResponse { results }))
     }
 
 }

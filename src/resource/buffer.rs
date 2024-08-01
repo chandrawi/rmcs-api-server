@@ -119,6 +119,25 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
+    async fn list_buffer_first_offset(&self, request: Request<BuffersSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_first_offset(
+            request.number as usize,
+            request.offset as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
     async fn list_buffer_last(&self, request: Request<BuffersSelector>)
         -> Result<Response<BufferListResponse>, Status>
     {
@@ -126,6 +145,25 @@ impl BufferService for BufferServer {
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_last(
             request.number as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_last_offset(&self, request: Request<BuffersSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_last_offset(
+            request.number as usize,
+            request.offset as usize,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.status.map(|s| BufferStatus::from(s as i16))
