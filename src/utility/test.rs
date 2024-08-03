@@ -58,7 +58,7 @@ impl TestServer {
         let pool = PgPoolOptions::new().connect(self.db_url.as_str()).await?;
         let sql = match self.kind {
             TestServerKind::Auth => "TRUNCATE TABLE \"token\", \"user_role\", \"user\", \"role_access\", \"role\", \"api_procedure\", \"api\";",
-            TestServerKind::Resource => "TRUNCATE TABLE \"system_log\", \"data_slice\", \"data_buffer\", \"data\", \"group_model_map\", \"group_device_map\", \"group_model\", \"group_device\", \"device_config\", \"device\", \"device_type_model\", \"device_type\", \"model_config\", \"model\";"
+            TestServerKind::Resource => "TRUNCATE TABLE \"system_log\", \"slice_data_set\", \"slice_data\", \"data_buffer\", \"data\", \"set_map\", \"set_template_map\", \"set\", \"set_template\", \"group_model_map\", \"group_device_map\", \"group_model\", \"group_device\", \"device_config\", \"device\", \"device_type_model\", \"device_type\", \"model_config\", \"model\";"
         };
         sqlx::query(sql)
             .execute(&pool)

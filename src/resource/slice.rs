@@ -4,8 +4,10 @@ use uuid::Uuid;
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::slice::slice_service_server::SliceService;
 use rmcs_resource_api::slice::{
-    SliceSchema, SliceId, SliceName, SliceDevice, SliceModel, SliceDeviceModel, SliceUpdate,
-    SliceReadResponse, SliceListResponse, SliceCreateResponse, SliceChangeResponse
+    SliceSchema, SliceId, SliceTime, SliceRange, SliceNameTime, SliceNameRange, SliceUpdate, SliceOption,
+    SliceSetSchema, SliceSetTime, SliceSetRange, SliceSetOption,
+    SliceReadResponse, SliceListResponse, SliceCreateResponse, SliceChangeResponse,
+    SliceSetReadResponse, SliceSetListResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -48,53 +50,85 @@ impl SliceService for SliceServer {
         Ok(Response::new(SliceReadResponse { result }))
     }
 
-    async fn list_slice_by_name(&self, request: Request<SliceName>)
+    async fn list_slice_by_time(&self, request: Request<SliceTime>)
         -> Result<Response<SliceListResponse>, Status>
     {
         self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_name(&request.name).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
-        };
-        Ok(Response::new(SliceListResponse { results }))
-    }
-
-    async fn list_slice_by_device(&self, request: Request<SliceDevice>)
-        -> Result<Response<SliceListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_SLICE)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_device(Uuid::from_slice(&request.device_id).unwrap_or_default()).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
-        };
-        Ok(Response::new(SliceListResponse { results }))
-    }
-
-    async fn list_slice_by_model(&self, request: Request<SliceModel>)
-        -> Result<Response<SliceListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_SLICE)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_model(Uuid::from_slice(&request.model_id).unwrap_or_default()).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
-        };
-        Ok(Response::new(SliceListResponse { results }))
-    }
-
-    async fn list_slice_by_device_model(&self, request: Request<SliceDeviceModel>)
-        -> Result<Response<SliceListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_SLICE)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_device_model(
+        let result = self.resource_db.list_slice_by_time(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Uuid::from_slice(&request.model_id).unwrap_or_default()
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceListResponse { results }))
+    }
+
+    async fn list_slice_by_range_time(&self, request: Request<SliceRange>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_by_range_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceListResponse { results }))
+    }
+
+    async fn list_slice_by_name_time(&self, request: Request<SliceNameTime>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_by_name_time(
+            &request.name,
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceListResponse { results }))
+    }
+
+    async fn list_slice_by_name_range_time(&self, request: Request<SliceNameRange>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_by_name_range_time(
+            &request.name,
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceListResponse { results }))
+    }
+
+    async fn list_slice_option(&self, request: Request<SliceOption>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_option(
+            request.device_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.model_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref(),
+            request.begin.map(|t| Utc.timestamp_nanos(t * 1000)),
+            request.end.map(|t| Utc.timestamp_nanos(t * 1000))
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -148,6 +182,154 @@ impl SliceService for SliceServer {
         self.validate(request.extensions(), DELETE_SLICE)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_slice(request.id).await;
+        match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(SLICE_DELETE_ERR))
+        };
+        Ok(Response::new(SliceChangeResponse { }))
+    }
+
+    async fn read_slice_set(&self, request: Request<SliceId>)
+        -> Result<Response<SliceSetReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_slice_set(request.id).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceSetReadResponse { result }))
+    }
+
+    async fn list_slice_set_by_time(&self, request: Request<SliceSetTime>)
+        -> Result<Response<SliceSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_set_by_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceSetListResponse { results }))
+    }
+
+    async fn list_slice_set_by_range_time(&self, request: Request<SliceSetRange>)
+        -> Result<Response<SliceSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_set_by_range_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceSetListResponse { results }))
+    }
+
+    async fn list_slice_set_by_name_time(&self, request: Request<SliceNameTime>)
+        -> Result<Response<SliceSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_set_by_name_time(
+            &request.name,
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceSetListResponse { results }))
+    }
+
+    async fn list_slice_set_by_name_range_time(&self, request: Request<SliceNameRange>)
+        -> Result<Response<SliceSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_set_by_name_range_time(
+            &request.name,
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceSetListResponse { results }))
+    }
+
+    async fn list_slice_set_option(&self, request: Request<SliceSetOption>)
+        -> Result<Response<SliceSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_set_option(
+            request.set_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref(),
+            request.begin.map(|t| Utc.timestamp_nanos(t * 1000)),
+            request.end.map(|t| Utc.timestamp_nanos(t * 1000))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+        };
+        Ok(Response::new(SliceSetListResponse { results }))
+    }
+
+    async fn create_slice_set(&self, request: Request<SliceSetSchema>)
+        -> Result<Response<SliceCreateResponse>, Status>
+    {
+        self.validate(request.extensions(), CREATE_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.create_slice_set(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp_begin * 1000),
+            Utc.timestamp_nanos(request.timestamp_end * 1000),
+            &request.name,
+            Some(&request.description)
+        ).await;
+        let id = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(SLICE_CREATE_ERR))
+        };
+        Ok(Response::new(SliceCreateResponse { id }))
+    }
+
+    async fn update_slice_set(&self, request: Request<SliceUpdate>)
+        -> Result<Response<SliceChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), UPDATE_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.update_slice_set(
+            request.id,
+            request.timestamp_begin.map(|s| Utc.timestamp_nanos(s * 1000)),
+            request.timestamp_end.map(|s| Utc.timestamp_nanos(s * 1000)),
+            request.name.as_deref(),
+            request.description.as_deref()
+        ).await;
+        match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(SLICE_UPDATE_ERR))
+        };
+        Ok(Response::new(SliceChangeResponse { }))
+    }
+
+    async fn delete_slice_set(&self, request: Request<SliceId>)
+    -> Result<Response<SliceChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), DELETE_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.delete_slice_set(request.id).await;
         match result {
             Ok(value) => value,
             Err(_) => return Err(Status::internal(SLICE_DELETE_ERR))
