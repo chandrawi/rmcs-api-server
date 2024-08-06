@@ -3,7 +3,7 @@ use uuid::Uuid;
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::group::group_service_server::GroupService;
 use rmcs_resource_api::group::{
-    GroupModelSchema, GroupDeviceSchema, GroupId, GroupIds, GroupName, GroupCategory, GroupNameCategory, GroupUpdate,
+    GroupModelSchema, GroupDeviceSchema, GroupId, GroupIds, GroupName, GroupCategory, GroupOption, GroupUpdate,
     GroupModel, GroupDevice,
     GroupModelReadResponse, GroupModelListResponse, GroupCreateResponse, GroupChangeResponse,
     GroupDeviceReadResponse, GroupDeviceListResponse
@@ -89,14 +89,14 @@ impl GroupService for GroupServer {
         Ok(Response::new(GroupModelListResponse { results }))
     }
 
-    async fn list_group_model_by_name_category(&self, request: Request<GroupNameCategory>)
+    async fn list_group_model_option(&self, request: Request<GroupOption>)
         -> Result<Response<GroupModelListResponse>, Status>
     {
         self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_group_model_by_name_category(
-            &request.name,
-            &request.category
+        let result = self.resource_db.list_group_model_option(
+            request.name.as_deref(),
+            request.category.as_deref()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -240,14 +240,14 @@ impl GroupService for GroupServer {
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
 
-    async fn list_group_device_by_name_category(&self, request: Request<GroupNameCategory>)
+    async fn list_group_device_option(&self, request: Request<GroupOption>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
         self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_group_device_by_name_category(
-            &request.name,
-            &request.category
+        let result = self.resource_db.list_group_device_option(
+            request.name.as_deref(),
+            request.category.as_deref()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -391,14 +391,14 @@ impl GroupService for GroupServer {
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
 
-    async fn list_group_gateway_by_name_category(&self, request: Request<GroupNameCategory>)
+    async fn list_group_gateway_option(&self, request: Request<GroupOption>)
         -> Result<Response<GroupDeviceListResponse>, Status>
     {
         self.validate(request.extensions(), READ_GROUP)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_group_gateway_by_name_category(
-            &request.name,
-            &request.category
+        let result = self.resource_db.list_group_gateway_option(
+            request.name.as_deref(),
+            request.category.as_deref()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),

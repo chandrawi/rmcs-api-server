@@ -4,7 +4,7 @@ use rmcs_resource_db::{Resource, DataType, ConfigType, ConfigValue};
 use rmcs_resource_api::model::model_service_server::ModelService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::model::{
-    ModelSchema, ModelId, ModelIds, ModelName, ModelCategory, ModelNameCategory, TypeId, ModelUpdate,
+    ModelSchema, ModelId, ModelIds, ModelName, ModelCategory, ModelOption, TypeId, ModelUpdate,
     ConfigSchema, ConfigId, ConfigUpdate,
     ModelReadResponse, ModelListResponse, ModelCreateResponse, ModelChangeResponse,
     ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse
@@ -67,6 +67,21 @@ impl ModelService for ModelServer {
         Ok(Response::new(ModelListResponse { results }))
     }
 
+    async fn list_model_by_type(&self, request: Request<TypeId>)
+        -> Result<Response<ModelListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_MODEL)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_model_by_type(
+            Uuid::from_slice(&request.id).unwrap_or_default()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+        };
+        Ok(Response::new(ModelListResponse { results }))
+    }
+
     async fn list_model_by_name(&self, request: Request<ModelName>)
         -> Result<Response<ModelListResponse>, Status>
     {
@@ -93,29 +108,15 @@ impl ModelService for ModelServer {
         Ok(Response::new(ModelListResponse { results }))
     }
 
-    async fn list_model_by_name_category(&self, request: Request<ModelNameCategory>)
+    async fn list_model_option(&self, request: Request<ModelOption>)
         -> Result<Response<ModelListResponse>, Status>
     {
         self.validate(request.extensions(), READ_MODEL)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_model_by_name_category(
-            &request.name,
-            &request.category
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
-        };
-        Ok(Response::new(ModelListResponse { results }))
-    }
-
-    async fn list_model_by_type(&self, request: Request<TypeId>)
-        -> Result<Response<ModelListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_MODEL)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_model_by_type(
-            Uuid::from_slice(&request.id).unwrap_or_default()
+        let result = self.resource_db.list_model_option(
+            request.type_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref(),
+            request.category.as_deref()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),

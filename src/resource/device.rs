@@ -4,14 +4,7 @@ use rmcs_resource_db::{Resource, ConfigType, ConfigValue};
 use rmcs_resource_api::device::device_service_server::DeviceService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::device::{
-    DeviceSchema, DeviceId, DeviceIds, SerialNumber, DeviceName, DeviceGatewayName, DeviceGatewayType, DeviceUpdate,
-    GatewaySchema, GatewayId, GatewayIds, GatewayName, GatewayUpdate,
-    ConfigSchema, ConfigId, ConfigUpdate,
-    TypeSchema, TypeId, TypeIds, TypeName, TypeModel, TypeUpdate,
-    DeviceReadResponse, DeviceListResponse, DeviceCreateResponse, DeviceChangeResponse,
-    GatewayReadResponse, GatewayListResponse, GatewayCreateResponse, GatewayChangeResponse,
-    ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse,
-    TypeReadResponse, TypeListResponse, TypeCreateResponse, TypeChangeResponse
+    ConfigChangeResponse, ConfigCreateResponse, ConfigId, ConfigListResponse, ConfigReadResponse, ConfigSchema, ConfigUpdate, DeviceChangeResponse, DeviceCreateResponse, DeviceId, DeviceIds, DeviceListResponse, DeviceName, DeviceOption, DeviceReadResponse, DeviceSchema, DeviceUpdate, GatewayChangeResponse, GatewayCreateResponse, GatewayId, GatewayIds, GatewayListResponse, GatewayName, GatewayOption, GatewayReadResponse, GatewaySchema, GatewayUpdate, SerialNumber, TypeChangeResponse, TypeCreateResponse, TypeId, TypeIds, TypeListResponse, TypeModel, TypeName, TypeOption, TypeReadResponse, TypeSchema, TypeUpdate
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -126,30 +119,15 @@ impl DeviceService for DeviceServer {
         Ok(Response::new(DeviceListResponse { results }))
     }
 
-    async fn list_device_by_gateway_type(&self, request: Request<DeviceGatewayType>)
+    async fn list_device_option(&self, request: Request<DeviceOption>)
         -> Result<Response<DeviceListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_device_by_gateway_type(
-            Uuid::from_slice(&request.gateway_id).unwrap_or_default(),
-            Uuid::from_slice(&request.type_id).unwrap_or_default()
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
-        };
-        Ok(Response::new(DeviceListResponse { results }))
-    }
-
-    async fn list_device_by_gateway_name(&self, request: Request<DeviceGatewayName>)
-        -> Result<Response<DeviceListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_DEVICE)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_device_by_gateway_name(
-            Uuid::from_slice(&request.gateway_id).unwrap_or_default(),
-            &request.name
+        let result = self.resource_db.list_device_option(
+            request.gateway_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.type_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref()
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -271,6 +249,22 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), READ_DEVICE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_gateway_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
+        };
+        Ok(Response::new(GatewayListResponse { results }))
+    }
+
+    async fn list_gateway_option(&self, request: Request<GatewayOption>)
+        -> Result<Response<GatewayListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DEVICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_gateway_option(
+            request.type_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref()
+        ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
@@ -529,6 +523,19 @@ impl DeviceService for DeviceServer {
         self.validate(request.extensions(), READ_TYPE)?;
         let request = request.into_inner();
         let result = self.resource_db.list_type_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(TYPE_NOT_FOUND))
+        };
+        Ok(Response::new(TypeListResponse { results }))
+    }
+
+    async fn list_type_option(&self, request: Request<TypeOption>)
+        -> Result<Response<TypeListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_TYPE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_type_option(request.name.as_deref()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(TYPE_NOT_FOUND))

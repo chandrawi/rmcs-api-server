@@ -3,8 +3,9 @@ use uuid::Uuid;
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::set::set_service_server::SetService;
 use rmcs_resource_api::set::{
-    SetSchema, SetId, SetIds, SetName, SetUpdate, SetMemberRequest, SetMemberSwap,
-    SetTemplateSchema, SetTemplateId, SetTemplateIds, SetTemplateName, SetTemplateUpdate, SetTemplateMemberRequest, SetTemplateMemberSwap,
+    SetSchema, SetId, SetIds, SetName, SetOption, SetUpdate, SetMemberRequest, SetMemberSwap,
+    SetTemplateSchema, SetTemplateId, SetTemplateIds, SetTemplateName, SetTemplateOption, 
+    SetTemplateUpdate, SetTemplateMemberRequest, SetTemplateMemberSwap,
     SetReadResponse, SetListResponse, SetCreateResponse, SetChangeResponse, 
     TemplateReadResponse, TemplateListResponse, TemplateCreateResponse, TemplateChangeResponse
 };
@@ -82,6 +83,22 @@ impl SetService for SetServer {
         self.validate(request.extensions(), READ_SET)?;
         let request = request.into_inner();
         let result = self.resource_db.list_set_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+        };
+        Ok(Response::new(SetListResponse { results }))
+    }
+
+    async fn list_set_option(&self, request: Request<SetOption>)
+        -> Result<Response<SetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SET)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_set_option(
+            request.template_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref()
+        ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
@@ -226,6 +243,21 @@ impl SetService for SetServer {
         self.validate(request.extensions(), READ_SET)?;
         let request = request.into_inner();
         let result = self.resource_db.list_set_template_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+        };
+        Ok(Response::new(TemplateListResponse { results }))
+    }
+
+    async fn list_set_template_option(&self, request: Request<SetTemplateOption>)
+        -> Result<Response<TemplateListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SET)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_set_template_option(
+            request.name.as_deref()
+        ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
