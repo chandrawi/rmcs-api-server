@@ -3,7 +3,7 @@ use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::user::user_service_server::UserService;
 use rmcs_auth_api::user::{
-    UserSchema, UserId, UserName, ApiId, RoleId, UserOption, UserUpdate, UserRole,
+    UserSchema, UserId, UserIds, UserName, ApiId, RoleId, UserOption, UserUpdate, UserRole,
     UserReadResponse, UserListResponse, UserCreateResponse, UserChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
@@ -53,6 +53,21 @@ impl UserService for UserServer {
             Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
         };
         Ok(Response::new(UserReadResponse { result }))
+    }
+
+    async fn list_user_by_ids(&self, request: Request<UserIds>)
+        -> Result<Response<UserListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_user_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+        };
+        Ok(Response::new(UserListResponse { results }))
     }
 
     async fn list_user_by_api(&self, request: Request<ApiId>)

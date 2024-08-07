@@ -3,8 +3,8 @@ use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::api::api_service_server::ApiService;
 use rmcs_auth_api::api::{
-    ApiSchema, ApiId, ApiName, ApiCategory, ApiOption, ApiUpdate,
-    ProcedureSchema, ProcedureId, ProcedureName, ProcedureOption, ProcedureUpdate,
+    ApiSchema, ApiId, ApiIds, ApiName, ApiCategory, ApiOption, ApiUpdate,
+    ProcedureSchema, ProcedureId, ProcedureIds, ProcedureName, ProcedureOption, ProcedureUpdate,
     ApiReadResponse, ApiListResponse, ApiCreateResponse, ApiChangeResponse,
     ProcedureReadResponse, ProcedureListResponse, ProcedureCreateResponse, ProcedureChangeResponse
 };
@@ -55,6 +55,21 @@ impl ApiService for ApiServer {
             Err(_) => return Err(Status::not_found(API_NOT_FOUND))
         };
         Ok(Response::new(ApiReadResponse { result }))
+    }
+
+    async fn list_api_by_ids(&self, request: Request<ApiIds>)
+        -> Result<Response<ApiListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_api_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(API_NOT_FOUND))
+        };
+        Ok(Response::new(ApiListResponse { results }))
     }
 
     async fn list_api_by_name(&self, request: Request<ApiName>)
@@ -181,6 +196,21 @@ impl ApiService for ApiServer {
             Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
         };
         Ok(Response::new(ProcedureReadResponse { result }))
+    }
+
+    async fn list_procedure_by_ids(&self, request: Request<ProcedureIds>)
+        -> Result<Response<ProcedureListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_procedure_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
+        };
+        Ok(Response::new(ProcedureListResponse { results }))
     }
 
     async fn list_procedure_by_api(&self, request: Request<ApiId>)

@@ -3,7 +3,7 @@ use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::role::role_service_server::RoleService;
 use rmcs_auth_api::role::{
-    RoleSchema, RoleId, RoleName, ApiId, UserId, RoleOption, RoleUpdate, RoleAccess,
+    RoleSchema, RoleId, RoleIds, RoleName, ApiId, UserId, RoleOption, RoleUpdate, RoleAccess,
     RoleReadResponse, RoleListResponse, RoleCreateResponse, RoleChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
@@ -55,6 +55,21 @@ impl RoleService for RoleServer {
             Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
         };
         Ok(Response::new(RoleReadResponse { result }))
+    }
+
+    async fn list_role_by_ids(&self, request: Request<RoleIds>)
+        -> Result<Response<RoleListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_role_by_ids(
+            request.ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>().as_slice()
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+        };
+        Ok(Response::new(RoleListResponse { results }))
     }
 
     async fn list_role_by_api(&self, request: Request<ApiId>)
