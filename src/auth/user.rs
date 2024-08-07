@@ -3,7 +3,7 @@ use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::user::user_service_server::UserService;
 use rmcs_auth_api::user::{
-    UserSchema, UserId, UserName, RoleId, UserUpdate, UserRole,
+    UserSchema, UserId, UserName, ApiId, RoleId, UserOption, UserUpdate, UserRole,
     UserReadResponse, UserListResponse, UserCreateResponse, UserChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
@@ -55,12 +55,55 @@ impl UserService for UserServer {
         Ok(Response::new(UserReadResponse { result }))
     }
 
+    async fn list_user_by_api(&self, request: Request<ApiId>)
+        -> Result<Response<UserListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_user_by_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+        };
+        Ok(Response::new(UserListResponse { results }))
+    }
+
     async fn list_user_by_role(&self, request: Request<RoleId>)
         -> Result<Response<UserListResponse>, Status>
     {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.list_user_by_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+        };
+        Ok(Response::new(UserListResponse { results }))
+    }
+
+    async fn list_user_by_name(&self, request: Request<UserName>)
+        -> Result<Response<UserListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_user_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+        };
+        Ok(Response::new(UserListResponse { results }))
+    }
+
+    async fn list_user_option(&self, request: Request<UserOption>)
+        -> Result<Response<UserListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_user_option(
+            request.api_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.role_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref()
+        ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(USER_NOT_FOUND))

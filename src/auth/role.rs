@@ -3,7 +3,7 @@ use uuid::Uuid;
 use rmcs_auth_db::Auth;
 use rmcs_auth_api::role::role_service_server::RoleService;
 use rmcs_auth_api::role::{
-    RoleSchema, RoleId, RoleName, ApiId, UserId, RoleUpdate, RoleAccess,
+    RoleSchema, RoleId, RoleName, ApiId, UserId, RoleOption, RoleUpdate, RoleAccess,
     RoleReadResponse, RoleListResponse, RoleCreateResponse, RoleChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
@@ -76,6 +76,36 @@ impl RoleService for RoleServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.list_role_by_user(Uuid::from_slice(&request.user_id).unwrap_or_default()).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+        };
+        Ok(Response::new(RoleListResponse { results }))
+    }
+
+    async fn list_role_by_name(&self, request: Request<RoleName>)
+        -> Result<Response<RoleListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_role_by_name(&request.name).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+        };
+        Ok(Response::new(RoleListResponse { results }))
+    }
+
+    async fn list_role_option(&self, request: Request<RoleOption>)
+        -> Result<Response<RoleListResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.list_role_option(
+            request.api_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.user_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref()
+        ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
