@@ -1,6 +1,6 @@
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, DataType, ConfigType, ConfigValue};
+use rmcs_resource_db::{Resource, DataType, DataValue};
 use rmcs_resource_api::model::model_service_server::ModelService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::model::{
@@ -217,9 +217,9 @@ impl ModelService for ModelServer {
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             request.index,
             &request.name,
-            ConfigValue::from_bytes(
+            DataValue::from_bytes(
                 &request.config_bytes, 
-                ConfigType::from(common::ConfigType::try_from(request.config_type).unwrap_or_default())
+                DataType::from(common::DataType::try_from(request.config_type).unwrap_or_default())
             ),
             &request.category
         ).await;
@@ -239,9 +239,9 @@ impl ModelService for ModelServer {
             request.id,
             request.name.as_deref(),
             request.config_bytes.map(|s| {
-                ConfigValue::from_bytes(
+                DataValue::from_bytes(
                     &s,
-                    ConfigType::from(common::ConfigType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
+                    DataType::from(common::DataType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
                 )
             }),
             request.category.as_deref()

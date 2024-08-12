@@ -1,7 +1,7 @@
 use tonic::{Request, Response, Status};
 use chrono::{Utc, TimeZone};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, LogType, LogValue, LogStatus};
+use rmcs_resource_db::{Resource, DataType, DataValue, LogStatus};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::log::{
@@ -113,9 +113,9 @@ impl LogService for LogServer {
             Utc.timestamp_nanos(request.timestamp * 1000),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             LogStatus::from(request.status as i16),
-            LogValue::from_bytes(
+            DataValue::from_bytes(
                 &request.log_bytes, 
-                LogType::from(common::ConfigType::try_from(request.log_type).unwrap_or_default())
+                DataType::from(common::DataType::try_from(request.log_type).unwrap_or_default())
             )
         ).await;
         match result {
@@ -135,9 +135,9 @@ impl LogService for LogServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             request.status.map(|s| LogStatus::from(s as i16)),
             request.log_bytes.map(|s| {
-                LogValue::from_bytes(
+                DataValue::from_bytes(
                     &s, 
-                    LogType::from(common::ConfigType::try_from(request.log_type.unwrap_or_default()).unwrap_or_default())
+                    DataType::from(common::DataType::try_from(request.log_type.unwrap_or_default()).unwrap_or_default())
                 )
             })
         ).await;

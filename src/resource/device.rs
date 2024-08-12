@@ -1,6 +1,6 @@
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, ConfigType, ConfigValue};
+use rmcs_resource_db::{Resource, DataType, DataValue};
 use rmcs_resource_api::device::device_service_server::DeviceService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::device::{
@@ -357,9 +357,9 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.create_device_config(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             &request.name,
-            ConfigValue::from_bytes(
+            DataValue::from_bytes(
                 &request.config_bytes, 
-                ConfigType::from(common::ConfigType::try_from(request.config_type).unwrap_or_default())
+                DataType::from(common::DataType::try_from(request.config_type).unwrap_or_default())
             ),
             &request.category
         ).await;
@@ -379,9 +379,9 @@ impl DeviceService for DeviceServer {
             request.id,
             request.name.as_deref(),
             request.config_bytes.map(|s| {
-                ConfigValue::from_bytes(
+                DataValue::from_bytes(
                     &s,
-                    ConfigType::from(common::ConfigType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
+                    DataType::from(common::DataType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
                 )
             }),
             request.category.as_deref()
@@ -440,9 +440,9 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.create_gateway_config(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             &request.name,
-            ConfigValue::from_bytes(
+            DataValue::from_bytes(
                 &request.config_bytes, 
-                ConfigType::from(common::ConfigType::try_from(request.config_type).unwrap_or_default())
+                DataType::from(common::DataType::try_from(request.config_type).unwrap_or_default())
             ),
             &request.category
         ).await;
@@ -462,9 +462,9 @@ impl DeviceService for DeviceServer {
             request.id,
             request.name.as_deref(),
             request.config_bytes.map(|s| {
-                ConfigValue::from_bytes(
+                DataValue::from_bytes(
                     &s,
-                    ConfigType::from(common::ConfigType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
+                    DataType::from(common::DataType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
                 )
             }),
             request.category.as_deref()
