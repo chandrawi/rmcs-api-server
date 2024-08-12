@@ -5,8 +5,8 @@ use rmcs_resource_db::{Resource, DataType, ArrayDataValue, BufferStatus};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
-    BufferSchema, BufferId, BufferTime, BufferSelector, BuffersSelector, BufferUpdate,
-    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse
+    BufferSchema, BufferId, BufferTime, BufferSelector, BuffersSelector, BufferUpdate, BufferCount,
+    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -234,6 +234,23 @@ impl BufferService for BufferServer {
             Err(_) => return Err(Status::internal(BUFFER_DELETE_ERR))
         };
         Ok(Response::new(BufferChangeResponse { }))
+    }
+
+    async fn count_buffer(&self, request: Request<BufferCount>)
+        -> Result<Response<BufferCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_buffer(
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferCountResponse { count }))
     }
 
 }
