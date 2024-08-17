@@ -6,7 +6,8 @@ use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::data::{
     DataSchema, DataId, DataTime, DataRange, DataNumber, DataSetId, DataSetTime, DataSetRange, DataSetNumber, DataCount,
-    DataReadResponse, DataListResponse, DataChangeResponse, DataSetReadResponse, DataSetListResponse, DataCountResponse
+    DataReadResponse, DataListResponse, DataChangeResponse, DataSetReadResponse, DataSetListResponse, DataCountResponse,
+    TimestampReadResponse, TimestampListResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -139,6 +140,58 @@ impl DataService for DataServer {
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
         Ok(Response::new(DataListResponse { results }))
+    }
+
+    async fn read_data_timestamp(&self, request: Request<DataId>)
+        -> Result<Response<TimestampReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_data_timestamp(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let timestamp = match result {
+            Ok(value) => value.timestamp_micros(),
+            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampReadResponse { timestamp }))
+    }
+
+    async fn list_data_timestamp_by_last_time(&self, request: Request<DataTime>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_data_timestamp_by_last_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_data_timestamp_by_range_time(&self, request: Request<DataRange>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_data_timestamp_by_range_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
     async fn create_data(&self, request: Request<DataSchema>)
@@ -412,6 +465,55 @@ impl DataService for DataServer {
             Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
         };
         Ok(Response::new(DataSetListResponse { results }))
+    }
+
+    async fn read_data_set_timestamp(&self, request: Request<DataSetId>)
+        -> Result<Response<TimestampReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_data_set_timestamp(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let timestamp = match result {
+            Ok(value) => value.timestamp_micros(),
+            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampReadResponse { timestamp }))
+    }
+
+    async fn list_data_set_timestamp_by_last_time(&self, request: Request<DataSetTime>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_data_set_timestamp_by_last_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_data_set_timestamp_by_range_time(&self, request: Request<DataSetRange>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_data_set_timestamp_by_range_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
 }
