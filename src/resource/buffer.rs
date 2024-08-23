@@ -5,7 +5,7 @@ use rmcs_resource_db::{Resource, DataType, ArrayDataValue, BufferStatus};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
-    BufferSchema, BufferId, BufferTime, BufferSelector, BuffersSelector, BufferUpdate, BufferCount,
+    BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate, BufferCount,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
@@ -65,6 +65,81 @@ impl BufferService for BufferServer {
             Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
         };
         Ok(Response::new(BufferReadResponse { result }))
+    }
+
+    async fn list_buffer_by_last_time(&self, request: Request<BufferTime>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_last_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_range_time(&self, request: Request<BufferRange>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_range_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_number_before(&self, request: Request<BufferNumber>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_number_before(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.number as usize,
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_number_after(&self, request: Request<BufferNumber>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_number_after(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.number as usize,
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
     }
 
     async fn read_buffer_first(&self, request: Request<BufferSelector>)
