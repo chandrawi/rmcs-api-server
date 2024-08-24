@@ -6,6 +6,7 @@ use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
     BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate, BufferCount,
+    BufferSetTime, BufferSetRange, BufferSetNumber, BuffersSetSelector,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
@@ -241,6 +242,164 @@ impl BufferService for BufferServer {
             request.offset as usize,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_set_time(&self, request: Request<BufferSetTime>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_set_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_set_last_time(&self, request: Request<BufferSetTime>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_set_last_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_set_range_time(&self, request: Request<BufferSetRange>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_set_range_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_set_number_before(&self, request: Request<BufferSetNumber>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_set_number_before(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.number as usize,
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_set_number_after(&self, request: Request<BufferSetNumber>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_set_number_after(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.number as usize,
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_first_by_set(&self, request: Request<BuffersSetSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_first_by_set(
+            request.number as usize,
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_first_offset_by_set(&self, request: Request<BuffersSetSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_first_offset_by_set(
+            request.number as usize,
+            request.offset as usize,
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_last_by_set(&self, request: Request<BuffersSetSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_last_by_set(
+            request.number as usize,
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_last_offset_by_set(&self, request: Request<BuffersSetSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_last_offset_by_set(
+            request.number as usize,
+            request.offset as usize,
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
             request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let results = match result {
