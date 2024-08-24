@@ -6,6 +6,7 @@ use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
     BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate, BufferCount,
+    BufferIdsTime, BufferIdsRange, BufferIdsNumber, BuffersIdsSelector,
     BufferSetTime, BufferSetRange, BufferSetNumber, BuffersSetSelector,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse
 };
@@ -242,6 +243,173 @@ impl BufferService for BufferServer {
             request.offset as usize,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_ids_time(&self, request: Request<BufferIdsTime>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_ids_time(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_ids_last_time(&self, request: Request<BufferIdsTime>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_ids_last_time(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_ids_range_time(&self, request: Request<BufferIdsRange>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_ids_range_time(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_ids_number_before(&self, request: Request<BufferIdsNumber>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_ids_number_before(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.number as usize,
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_by_ids_number_after(&self, request: Request<BufferIdsNumber>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_by_ids_number_after(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.number as usize,
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_first_by_ids(&self, request: Request<BuffersIdsSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_first_by_ids(
+            request.number as usize,
+            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_first_offset_by_ids(&self, request: Request<BuffersIdsSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_first_offset_by_ids(
+            request.number as usize,
+            request.offset as usize,
+            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_last_by_ids(&self, request: Request<BuffersIdsSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_last_by_ids(
+            request.number as usize,
+            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferListResponse { results }))
+    }
+
+    async fn list_buffer_last_offset_by_ids(&self, request: Request<BuffersIdsSelector>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_last_offset_by_ids(
+            request.number as usize,
+            request.offset as usize,
+            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
             request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let results = match result {
