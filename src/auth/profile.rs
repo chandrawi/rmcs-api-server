@@ -64,7 +64,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.create_role_profile(
             Uuid::from_slice(&request.role_id).unwrap_or_default(),
             &request.name,
-            DataType::from(request.value_type as i32),
+            DataType::from(request.value_type),
             ProfileMode::from(request.mode)
         ).await;
         let id = match result {
@@ -82,7 +82,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.update_role_profile(
             request.id,
             request.name.as_deref(),
-            request.value_type.map(|x| DataType::from(x as i32)),
+            request.value_type.map(|x| DataType::from(x)),
             request.mode.map(|x| ProfileMode::from(x))
         ).await;
         match result {
@@ -141,7 +141,7 @@ impl ProfileService for ProfileServer {
             &request.name,
             DataValue::from_bytes(
                 &request.value_bytes,
-                DataType::from(request.value_type as i32)
+                DataType::from(request.value_type)
             )
         ).await;
         let id = match result {
@@ -162,7 +162,7 @@ impl ProfileService for ProfileServer {
             request.value_bytes.map(|s| {
                 DataValue::from_bytes(
                     &s,
-                    DataType::from(request.value_type.unwrap_or_default() as i32)
+                    DataType::from(request.value_type.unwrap_or_default())
                 )
             })
         ).await;

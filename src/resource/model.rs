@@ -2,7 +2,6 @@ use tonic::{Request, Response, Status};
 use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, DataValue};
 use rmcs_resource_api::model::model_service_server::ModelService;
-use rmcs_resource_api::common;
 use rmcs_resource_api::model::{
     ModelSchema, ModelId, ModelIds, ModelName, ModelCategory, ModelOption, TypeId, ModelUpdate,
     ConfigSchema, ConfigId, ConfigUpdate,
@@ -219,7 +218,7 @@ impl ModelService for ModelServer {
             &request.name,
             DataValue::from_bytes(
                 &request.config_bytes, 
-                DataType::from(common::DataType::try_from(request.config_type).unwrap_or_default())
+                DataType::from(request.config_type)
             ),
             &request.category
         ).await;
@@ -241,7 +240,7 @@ impl ModelService for ModelServer {
             request.config_bytes.map(|s| {
                 DataValue::from_bytes(
                     &s,
-                    DataType::from(common::DataType::try_from(request.config_type.unwrap_or_default()).unwrap_or_default())
+                    DataType::from(request.config_type.unwrap_or_default())
                 )
             }),
             request.category.as_deref()

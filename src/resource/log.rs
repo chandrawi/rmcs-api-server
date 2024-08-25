@@ -3,7 +3,6 @@ use chrono::{Utc, TimeZone};
 use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, DataValue, LogStatus};
 use rmcs_resource_api::log::log_service_server::LogService;
-use rmcs_resource_api::common;
 use rmcs_resource_api::log::{
     LogSchema, LogId, LogTime, LogRange, LogUpdate,
     LogReadResponse, LogListResponse, LogChangeResponse
@@ -115,7 +114,7 @@ impl LogService for LogServer {
             LogStatus::from(request.status as i16),
             DataValue::from_bytes(
                 &request.log_bytes, 
-                DataType::from(common::DataType::try_from(request.log_type).unwrap_or_default())
+                DataType::from(request.log_type)
             )
         ).await;
         match result {
@@ -137,7 +136,7 @@ impl LogService for LogServer {
             request.log_bytes.map(|s| {
                 DataValue::from_bytes(
                     &s, 
-                    DataType::from(common::DataType::try_from(request.log_type.unwrap_or_default()).unwrap_or_default())
+                    DataType::from(request.log_type.unwrap_or_default())
                 )
             })
         ).await;

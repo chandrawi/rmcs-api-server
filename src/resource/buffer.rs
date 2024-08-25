@@ -3,7 +3,6 @@ use chrono::{Utc, TimeZone};
 use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue, BufferStatus};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
-use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
     BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate,
     BufferIdsTime, BufferIdsRange, BufferIdsNumber, BufferIdsSelector, BuffersIdsSelector,
@@ -589,9 +588,7 @@ impl BufferService for BufferServer {
             Utc.timestamp_nanos(request.timestamp * 1000),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
-                request.data_type.into_iter().map(|e| {
-                    DataType::from(common::DataType::try_from(e).unwrap_or_default())
-                }).collect::<Vec<DataType>>().as_slice()
+                request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
             ).to_vec(),
             BufferStatus::from(request.status as i16)
         ).await;
@@ -612,9 +609,7 @@ impl BufferService for BufferServer {
             request.data_bytes.map(|s| {
                 ArrayDataValue::from_bytes(
                     &s,
-                    request.data_type.into_iter().map(|e| {
-                        DataType::from(common::DataType::try_from(e).unwrap_or_default())
-                    }).collect::<Vec<DataType>>().as_slice()
+                    request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
                 ).to_vec()
             }),
             request.status.map(|s| BufferStatus::from(s as i16))

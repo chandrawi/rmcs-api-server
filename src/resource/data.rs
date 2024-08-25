@@ -3,7 +3,6 @@ use chrono::{Utc, TimeZone};
 use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::data::data_service_server::DataService;
-use rmcs_resource_api::common;
 use rmcs_resource_api::data::{
     DataSchema, DataId, DataTime, DataRange, DataNumber, DataIds, DataIdsTime, DataIdsRange, DataIdsNumber,
     DataSetId, DataSetTime, DataSetRange, DataSetNumber,
@@ -391,9 +390,7 @@ impl DataService for DataServer {
             Utc.timestamp_nanos(request.timestamp * 1000),
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
-                request.data_type.into_iter().map(|e| {
-                    DataType::from(common::DataType::try_from(e).unwrap_or_default())
-                }).collect::<Vec<DataType>>().as_slice()
+                request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
             ).to_vec()
         ).await;
         match result {
