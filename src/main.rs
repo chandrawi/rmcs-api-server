@@ -2,6 +2,7 @@ use rmcs_auth_db::Auth;
 use rmcs_auth_api::api::api_service_server::ApiServiceServer;
 use rmcs_auth_api::role::role_service_server::RoleServiceServer;
 use rmcs_auth_api::user::user_service_server::UserServiceServer;
+use rmcs_auth_api::profile::profile_service_server::ProfileServiceServer;
 use rmcs_auth_api::token::token_service_server::TokenServiceServer;
 use rmcs_auth_api::auth::auth_service_server::AuthServiceServer;
 use rmcs_auth_api::descriptor as auth_descriptor;
@@ -18,6 +19,7 @@ use rmcs_resource_api::descriptor as resource_descriptor;
 use rmcs_api_server::auth::api::ApiServer;
 use rmcs_api_server::auth::role::RoleServer;
 use rmcs_api_server::auth::user::UserServer;
+use rmcs_api_server::auth::profile::ProfileServer;
 use rmcs_api_server::auth::token::TokenServer;
 use rmcs_api_server::auth::auth::AuthServer;
 use rmcs_api_server::resource::model::ModelServer;
@@ -40,6 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_server = ApiServer::new(auth_db.clone());
     let role_server = RoleServer::new(auth_db.clone());
     let user_server = UserServer::new(auth_db.clone());
+    let profile_server = ProfileServer::new(auth_db.clone());
     let token_server = TokenServer::new(auth_db.clone());
     let auth_server = AuthServer::new(auth_db.clone());
 
@@ -57,6 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(auth_descriptor::api::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(auth_descriptor::role::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(auth_descriptor::user::DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(auth_descriptor::profile::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(auth_descriptor::token::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(auth_descriptor::auth::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::model::DESCRIPTOR_SET)
@@ -73,6 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(ApiServiceServer::new(api_server))
         .add_service(RoleServiceServer::new(role_server))
         .add_service(UserServiceServer::new(user_server))
+        .add_service(ProfileServiceServer::new(profile_server))
         .add_service(TokenServiceServer::new(token_server))
         .add_service(AuthServiceServer::new(auth_server))
         .add_service(ModelServiceServer::new(model_server))

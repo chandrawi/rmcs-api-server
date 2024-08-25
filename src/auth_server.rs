@@ -3,12 +3,14 @@ use rmcs_auth_db::utility::migrate;
 use rmcs_auth_api::api::api_service_server::ApiServiceServer;
 use rmcs_auth_api::role::role_service_server::RoleServiceServer;
 use rmcs_auth_api::user::user_service_server::UserServiceServer;
+use rmcs_auth_api::profile::profile_service_server::ProfileServiceServer;
 use rmcs_auth_api::token::token_service_server::TokenServiceServer;
 use rmcs_auth_api::auth::auth_service_server::AuthServiceServer;
 use rmcs_auth_api::descriptor;
 use rmcs_api_server::auth::api::ApiServer;
 use rmcs_api_server::auth::role::RoleServer;
 use rmcs_api_server::auth::user::UserServer;
+use rmcs_api_server::auth::profile::ProfileServer;
 use rmcs_api_server::auth::token::TokenServer;
 use rmcs_api_server::auth::auth::AuthServer;
 use rmcs_api_server::utility::interceptor::interceptor;
@@ -42,12 +44,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_server = ApiServer::new(auth_db.clone()).with_validator();
     let role_server = RoleServer::new(auth_db.clone()).with_validator();
     let user_server = UserServer::new(auth_db.clone()).with_validator();
+    let profile_server = ProfileServer::new(auth_db.clone()).with_validator();
     let token_server = TokenServer::new(auth_db.clone()).with_validator();
     let auth_server = AuthServer::new(auth_db.clone());
 
     let api_server = ApiServiceServer::with_interceptor(api_server, interceptor);
     let role_server = RoleServiceServer::with_interceptor(role_server, interceptor);
     let user_server = UserServiceServer::with_interceptor(user_server, interceptor);
+    let profile_server = ProfileServiceServer::with_interceptor(profile_server, interceptor);
     let token_server = TokenServiceServer::with_interceptor(token_server, interceptor);
     let auth_server = AuthServiceServer::new(auth_server);
 
@@ -55,6 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(descriptor::api::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::role::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::user::DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(descriptor::profile::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::token::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::auth::DESCRIPTOR_SET)
         .build();
@@ -71,6 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(api_server)
         .add_service(role_server)
         .add_service(user_server)
+        .add_service(profile_server)
         .add_service(token_server)
         .add_service(auth_server)
         .add_service(reflection_service?)

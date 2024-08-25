@@ -1,6 +1,7 @@
 pub mod api;
 pub mod role;
 pub mod user;
+pub mod profile;
 pub mod token;
 pub mod auth;
 
@@ -25,6 +26,10 @@ const USER_UPDATE_ERR: &str = "update user error";
 const USER_DELETE_ERR: &str = "delete user error";
 const ADD_ROLE_ERR: &str = "add user role error";
 const RMV_ROLE_ERR: &str = "remove user role error";
+const PROF_NOT_FOUND: &str = "requested profile not found";
+const PROF_CREATE_ERR: &str = "create profile error";
+const PROF_UPDATE_ERR: &str = "update profile error";
+const PROF_DELETE_ERR: &str = "delete profile error";
 const TOKEN_NOT_FOUND: &str = "requested token not found";
 const TOKEN_CREATE_ERR: &str = "create token error";
 const TOKEN_UPDATE_ERR: &str = "update token error";
