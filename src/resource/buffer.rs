@@ -8,7 +8,8 @@ use rmcs_resource_api::buffer::{
     BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate, BufferCount,
     BufferIdsTime, BufferIdsRange, BufferIdsNumber, BuffersIdsSelector,
     BufferSetTime, BufferSetRange, BufferSetNumber, BuffersSetSelector,
-    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse
+    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse,
+    TimestampReadResponse, TimestampListResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -636,6 +637,146 @@ impl BufferService for BufferServer {
             Err(_) => return Err(Status::internal(BUFFER_DELETE_ERR))
         };
         Ok(Response::new(BufferChangeResponse { }))
+    }
+
+    async fn read_buffer_timestamp_first(&self, request: Request<BufferSelector>)
+        -> Result<Response<TimestampReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_buffer_timestamp_first(
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamp = match result {
+            Ok(value) => value.timestamp_micros(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampReadResponse { timestamp }))
+    }
+
+    async fn read_buffer_timestamp_last(&self, request: Request<BufferSelector>)
+        -> Result<Response<TimestampReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_buffer_timestamp_last(
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamp = match result {
+            Ok(value) => value.timestamp_micros(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampReadResponse { timestamp }))
+    }
+
+    async fn list_buffer_timestamp_first(&self, request: Request<BuffersSelector>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_timestamp_first(
+            request.number as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_buffer_timestamp_last(&self, request: Request<BuffersSelector>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_timestamp_last(
+            request.number as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_buffer_timestamp_first_by_ids(&self, request: Request<BuffersIdsSelector>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_timestamp_first_by_ids(
+            request.number as usize,
+            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_buffer_timestamp_last_by_ids(&self, request: Request<BuffersIdsSelector>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_timestamp_last_by_ids(
+            request.number as usize,
+            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_buffer_timestamp_first_by_set(&self, request: Request<BuffersSetSelector>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_timestamp_first_by_set(
+            request.number as usize,
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_buffer_timestamp_last_by_set(&self, request: Request<BuffersSetSelector>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_timestamp_last_by_set(
+            request.number as usize,
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
     async fn count_buffer(&self, request: Request<BufferCount>)
