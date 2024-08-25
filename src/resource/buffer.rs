@@ -5,9 +5,9 @@ use rmcs_resource_db::{Resource, DataType, ArrayDataValue, BufferStatus};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::buffer::{
-    BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate, BufferCount,
-    BufferIdsTime, BufferIdsRange, BufferIdsNumber, BuffersIdsSelector,
-    BufferSetTime, BufferSetRange, BufferSetNumber, BuffersSetSelector,
+    BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate,
+    BufferIdsTime, BufferIdsRange, BufferIdsNumber, BufferIdsSelector, BuffersIdsSelector,
+    BufferSetTime, BufferSetRange, BufferSetNumber, BufferSetSelector, BuffersSetSelector,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse,
     TimestampReadResponse, TimestampListResponse
 };
@@ -779,7 +779,7 @@ impl BufferService for BufferServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn count_buffer(&self, request: Request<BufferCount>)
+    async fn count_buffer(&self, request: Request<BufferSelector>)
         -> Result<Response<BufferCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
@@ -787,6 +787,39 @@ impl BufferService for BufferServer {
         let result = self.resource_db.count_buffer(
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferCountResponse { count }))
+    }
+
+    async fn count_buffer_by_ids(&self, request: Request<BufferIdsSelector>)
+        -> Result<Response<BufferCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_buffer_by_ids(
+            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            request.status.map(|s| BufferStatus::from(s as i16))
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+        };
+        Ok(Response::new(BufferCountResponse { count }))
+    }
+
+    async fn count_buffer_by_set(&self, request: Request<BufferSetSelector>)
+        -> Result<Response<BufferCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_buffer_by_set(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
             request.status.map(|s| BufferStatus::from(s as i16))
         ).await;
         let count = match result {

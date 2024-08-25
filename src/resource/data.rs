@@ -6,7 +6,7 @@ use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::common;
 use rmcs_resource_api::data::{
     DataSchema, DataId, DataTime, DataRange, DataNumber, DataIds, DataIdsTime, DataIdsRange, DataIdsNumber,
-    DataSetId, DataSetTime, DataSetRange, DataSetNumber, DataCount,
+    DataSetId, DataSetTime, DataSetRange, DataSetNumber,
     DataReadResponse, DataListResponse, DataChangeResponse, DataSetReadResponse, DataSetListResponse, DataCountResponse,
     TimestampReadResponse, TimestampListResponse
 };
@@ -573,7 +573,7 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn count_data(&self, request: Request<DataCount>)
+    async fn count_data(&self, request: Request<DataTime>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -589,7 +589,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_last_time(&self, request: Request<DataCount>)
+    async fn count_data_by_last_time(&self, request: Request<DataTime>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -597,7 +597,7 @@ impl DataService for DataServer {
         let result = self.resource_db.count_data_by_last_time(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp.unwrap_or_default() * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000)
         ).await;
         let count = match result {
             Ok(value) => value as u32,
@@ -606,7 +606,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_range_time(&self, request: Request<DataCount>)
+    async fn count_data_by_range_time(&self, request: Request<DataRange>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -614,8 +614,107 @@ impl DataService for DataServer {
         let result = self.resource_db.count_data_by_range_time(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.begin.unwrap_or_default() * 1000),
-            Utc.timestamp_nanos(request.end.unwrap_or_default() * 1000)
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+        };
+        Ok(Response::new(DataCountResponse { count }))
+    }
+
+    async fn count_data_by_ids(&self, request: Request<DataIdsTime>)
+        -> Result<Response<DataCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_data_by_ids(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+        };
+        Ok(Response::new(DataCountResponse { count }))
+    }
+
+    async fn count_data_by_ids_last_time(&self, request: Request<DataIdsTime>)
+        -> Result<Response<DataCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_data_by_ids_last_time(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+        };
+        Ok(Response::new(DataCountResponse { count }))
+    }
+
+    async fn count_data_by_ids_range_time(&self, request: Request<DataIdsRange>)
+        -> Result<Response<DataCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_data_by_ids_range_time(
+            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+        };
+        Ok(Response::new(DataCountResponse { count }))
+    }
+
+    async fn count_data_by_set(&self, request: Request<DataSetTime>)
+        -> Result<Response<DataCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_data_by_set(
+            Uuid::from_slice(&request.set_id).unwrap_or_default()
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+        };
+        Ok(Response::new(DataCountResponse { count }))
+    }
+
+    async fn count_data_by_set_last_time(&self, request: Request<DataSetTime>)
+        -> Result<Response<DataCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_data_by_set_last_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+        };
+        Ok(Response::new(DataCountResponse { count }))
+    }
+
+    async fn count_data_by_set_range_time(&self, request: Request<DataSetRange>)
+        -> Result<Response<DataCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_data_by_set_range_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
         ).await;
         let count = match result {
             Ok(value) => value as u32,
