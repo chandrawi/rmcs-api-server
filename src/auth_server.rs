@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(descriptor::profile::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::token::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::auth::DESCRIPTOR_SET)
-        .build();
+        .build_v1();
 
     Server::builder()
         .accept_http1(true)

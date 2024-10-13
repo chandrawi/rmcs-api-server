@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(resource_descriptor::buffer::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::slice::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(resource_descriptor::log::DESCRIPTOR_SET)
-        .build();
+        .build_v1();
 
     tonic::transport::Server::builder()
         .add_service(ApiServiceServer::new(api_server))

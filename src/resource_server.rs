@@ -90,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(descriptor::buffer::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::slice::DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(descriptor::log::DESCRIPTOR_SET)
-        .build();
+        .build_v1();
 
     Server::builder()
         .accept_http1(true)
