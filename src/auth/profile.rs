@@ -4,7 +4,8 @@ use rmcs_auth_db::{Auth, ProfileMode};
 use rmcs_resource_db::{DataType, DataValue};
 use rmcs_auth_api::profile::profile_service_server::ProfileService;
 use rmcs_auth_api::profile::{
-    RoleProfileSchema, UserProfileSchema, ProfileId, RoleId, UserId, RoleProfileUpdate, UserProfileUpdate,
+    RoleProfileSchema, UserProfileSchema, ProfileId, RoleId, UserId, 
+    RoleProfileUpdate, UserProfileUpdate, UserProfileSwap, 
     RoleProfileReadResponse, RoleProfileListResponse, UserProfileReadResponse, UserProfileListResponse,
     ProfileCreateResponse, ProfileChangeResponse
 };
@@ -179,6 +180,24 @@ impl ProfileService for ProfileServer {
         self.validate(request.extensions(), ValidatorKind::Root).await?;
         let request = request.into_inner();
         let result = self.auth_db.delete_user_profile(request.id).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(PROF_DELETE_ERR))
+        };
+        Ok(Response::new(ProfileChangeResponse { }))
+    }
+
+    async fn swap_user_profile(&self, request: Request<UserProfileSwap>)
+        -> Result<Response<ProfileChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), ValidatorKind::Root).await?;
+        let request = request.into_inner();
+        let result = self.auth_db.swap_user_profile(
+            Uuid::from_slice(&request.user_id).unwrap_or_default(),
+            &request.name,
+            request.order_1 as i16,
+            request.order_2 as i16
+        ).await;
         match result {
             Ok(_) => (),
             Err(_) => return Err(Status::internal(PROF_DELETE_ERR))
