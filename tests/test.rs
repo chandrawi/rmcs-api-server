@@ -81,7 +81,7 @@ mod tests {
     #[tokio::test]
     async fn test_auth() -> Result<(), Box<dyn std::error::Error>>
     {
-        std::env::set_var("RUST_BACKTRACE", "1");
+        unsafe { std::env::set_var("RUST_BACKTRACE", "1"); }
 
         // start auth server and wait until server process is running
         let auth_server = TestServer::new_secured(TestServerKind::Auth, None, None);

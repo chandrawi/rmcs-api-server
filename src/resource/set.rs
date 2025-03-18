@@ -161,7 +161,7 @@ impl SetService for SetServer {
         self.validate(request.extensions(), CHANGE_SET_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.add_set_member(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             &request.data_index
@@ -179,7 +179,7 @@ impl SetService for SetServer {
         self.validate(request.extensions(), CHANGE_SET_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_set_member(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default()
         ).await;
@@ -196,7 +196,7 @@ impl SetService for SetServer {
         self.validate(request.extensions(), CHANGE_SET_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.swap_set_member(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             Uuid::from_slice(&request.device_id_1).unwrap_or_default(),
             Uuid::from_slice(&request.model_id_1).unwrap_or_default(),
             Uuid::from_slice(&request.device_id_2).unwrap_or_default(),
@@ -318,7 +318,7 @@ impl SetService for SetServer {
         self.validate(request.extensions(), CHANGE_SET_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.add_set_template_member(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             Uuid::from_slice(&request.type_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             &request.data_index
@@ -336,7 +336,7 @@ impl SetService for SetServer {
         self.validate(request.extensions(), CHANGE_SET_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.remove_set_template_member(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.template_index as usize
         ).await;
         match result {
@@ -352,7 +352,7 @@ impl SetService for SetServer {
         self.validate(request.extensions(), CHANGE_SET_MEMBER)?;
         let request = request.into_inner();
         let result = self.resource_db.swap_set_template_member(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Uuid::from_slice(&request.id).unwrap_or_default(),
             request.template_index_1 as usize,
             request.template_index_2 as usize
         ).await;

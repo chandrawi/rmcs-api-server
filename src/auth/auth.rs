@@ -141,13 +141,13 @@ impl AuthService for AuthServer {
                 let mut auth_token = String::new();
                 // generate access tokens using data from user role and generated access id
                 let tokens: Vec<AccessTokenMap> = user.roles.iter().map(|e| {
-                    let gen = iter_tokens.next().unwrap_or_default();
-                    auth_token = gen.2;
+                    let generate = iter_tokens.next().unwrap_or_default();
+                    auth_token = generate.2;
                     AccessTokenMap {
                         api_id: e.api_id.as_bytes().to_vec(),
-                        access_token: token::generate_token(gen.0, &e.role, e.access_duration, &e.access_key)
+                        access_token: token::generate_token(generate.0, &e.role, e.access_duration, &e.access_key)
                             .unwrap_or(String::new()),
-                        refresh_token: gen.1
+                        refresh_token: generate.1
                     }
                 })
                 .filter(|e| e.access_token != String::new())

@@ -1,7 +1,7 @@
 [package]
 name = "rmcs-api-server"
-version = "0.3.1"
-edition = "2021"
+version = "0.4.0"
+edition = "2024"
 
 [[bin]]
 name = "auth_server"
@@ -24,23 +24,23 @@ rmcs-auth-api = { path = "../rmcs-auth-api/rust" }
 rmcs-auth-db = { path = "../rmcs-auth-db" }
 rmcs-resource-api = { path = "../rmcs-resource-api/rust" }
 rmcs-resource-db = { path = "../rmcs-resource-db" }
-sqlx = { version = "0.8.0", features = ["runtime-tokio-rustls", "postgres", "migrate", "uuid"] }
-tokio = { version = "1.41.0", features = ["rt-multi-thread", "macros"] }
-prost = "0.13.3"
-tonic = "0.12.3"
-tonic-reflection = "0.12.3"
-tonic-web = "0.12.3"
+sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "uuid"] }
+tokio = { version = "1.44.1", features = ["rt-multi-thread", "macros"] }
+prost = "0.13.5"
+tonic = "0.13.0"
+tonic-reflection = "0.13.0"
+tonic-web = "0.13.0"
 dotenvy = "0.15.7"
-chrono = { version = "0.4.38", default-features = false, features = ["clock", "iana-time-zone", "oldtime", "std"] }
-uuid = { version = "1.11.0", features = ["v4"] }
+chrono = { version = "0.4.40", default-features = false, features = ["clock", "iana-time-zone", "oldtime", "std"] }
+uuid = { version = "1.16.0", features = ["v4"] }
 rand = "0.8.5"
-serde = "1.0.214"
-rsa = "0.9.6"
+serde = "1.0.219"
+rsa = "0.9.8"
 pkcs8 = "0.10.2"
 spki = "0.7.3"
 sha2 = "0.10.8"
 argon2 = "0.5.3"
-jsonwebtoken = { version = "9.3.0", default-features = false }
-clap = { version = "4.5.20", features = ["derive"] }
-tower-http = { version = "0.6.1", features = ["cors"] }
-http = "1.1.0"
+jsonwebtoken = { version = "9.3.1", default-features = false }
+clap = { version = "4.5.32", features = ["derive"] }
+tower-http = { version = "0.6.2", features = ["cors"] }
+http = "1.3.1"
