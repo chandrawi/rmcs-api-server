@@ -50,3 +50,29 @@ pub(crate) fn verify_password(password: &[u8], hash: &str) -> Result<(), argon2:
     let parsed_hash = PasswordHash::new(&hash)?;
     argon2.verify_password(password, &parsed_hash)
 }
+
+pub(crate) fn handle_error(e: sqlx::Error) -> tonic::Status {
+    return match e {
+        sqlx::Error::RowNotFound => tonic::Status::not_found(e.to_string()),
+        sqlx::Error::InvalidArgument(message) => tonic::Status::invalid_argument(message),
+        sqlx::Error::Database(db_err) => {
+            match db_err.try_downcast::<sqlx::postgres::PgDatabaseError>() {
+                Ok(pg_err) => {
+                    let message = match pg_err.detail() {
+                        Some(detail) => format!("{} {}", pg_err.message(), detail),
+                        None => pg_err.message().to_string()
+                    };
+                    if pg_err.code() == "23505" {
+                        tonic::Status::already_exists(message)
+                    } else if pg_err.code() == "23501" || pg_err.code() == "23502" || pg_err.code() == "23503" {
+                        tonic::Status::invalid_argument(message)
+                    } else {
+                        tonic::Status::internal(message)
+                    }
+                },
+                Err(e) => tonic::Status::internal(e.message())
+            }
+        },
+        _ => tonic::Status::unknown(e.to_string())
+    }
+}

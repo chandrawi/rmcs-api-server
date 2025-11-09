@@ -10,9 +10,7 @@ use rmcs_auth_api::profile::{
     ProfileCreateResponse, ProfileChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
-use super::{
-    PROF_NOT_FOUND, PROF_CREATE_ERR, PROF_UPDATE_ERR, PROF_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 pub struct ProfileServer {
     pub auth_db: Auth,
@@ -39,7 +37,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.read_role_profile(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(PROF_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleProfileReadResponse { result }))
     }
@@ -52,7 +50,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.list_role_profile_by_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(PROF_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleProfileListResponse { results }))
     }
@@ -70,7 +68,7 @@ impl ProfileService for ProfileServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(PROF_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProfileCreateResponse { id }))
     }
@@ -88,7 +86,7 @@ impl ProfileService for ProfileServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(PROF_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProfileChangeResponse { }))
     }
@@ -101,7 +99,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.delete_role_profile(request.id).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(PROF_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProfileChangeResponse { }))
     }
@@ -114,7 +112,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.read_user_profile(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(PROF_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserProfileReadResponse { result }))
     }
@@ -127,7 +125,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.list_user_profile_by_user(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(PROF_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserProfileListResponse { results }))
     }
@@ -147,7 +145,7 @@ impl ProfileService for ProfileServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(PROF_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProfileCreateResponse { id }))
     }
@@ -169,7 +167,7 @@ impl ProfileService for ProfileServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(PROF_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProfileChangeResponse { }))
     }
@@ -182,7 +180,7 @@ impl ProfileService for ProfileServer {
         let result = self.auth_db.delete_user_profile(request.id).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(PROF_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProfileChangeResponse { }))
     }
@@ -200,7 +198,7 @@ impl ProfileService for ProfileServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(PROF_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProfileChangeResponse { }))
     }

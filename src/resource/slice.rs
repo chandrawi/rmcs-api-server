@@ -13,9 +13,7 @@ use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
     READ_SLICE, CREATE_SLICE, UPDATE_SLICE, DELETE_SLICE
 };
-use super::{
-    SLICE_NOT_FOUND, SLICE_CREATE_ERR, SLICE_UPDATE_ERR, SLICE_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 #[derive(Debug)]
 pub struct SliceServer {
@@ -45,7 +43,7 @@ impl SliceService for SliceServer {
         let result = self.resource_db.read_slice(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceReadResponse { result }))
     }
@@ -62,7 +60,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceListResponse { results }))
     }
@@ -80,7 +78,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceListResponse { results }))
     }
@@ -96,7 +94,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceListResponse { results }))
     }
@@ -113,7 +111,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceListResponse { results }))
     }
@@ -132,7 +130,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceListResponse { results }))
     }
@@ -152,7 +150,7 @@ impl SliceService for SliceServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SLICE_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceCreateResponse { id }))
     }
@@ -171,7 +169,7 @@ impl SliceService for SliceServer {
         ).await;
         match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SLICE_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceChangeResponse { }))
     }
@@ -184,7 +182,7 @@ impl SliceService for SliceServer {
         let result = self.resource_db.delete_slice(request.id).await;
         match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SLICE_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceChangeResponse { }))
     }
@@ -197,7 +195,7 @@ impl SliceService for SliceServer {
         let result = self.resource_db.read_slice_set(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceSetReadResponse { result }))
     }
@@ -213,7 +211,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceSetListResponse { results }))
     }
@@ -230,7 +228,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceSetListResponse { results }))
     }
@@ -246,7 +244,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceSetListResponse { results }))
     }
@@ -263,7 +261,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceSetListResponse { results }))
     }
@@ -281,7 +279,7 @@ impl SliceService for SliceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SLICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceSetListResponse { results }))
     }
@@ -300,7 +298,7 @@ impl SliceService for SliceServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SLICE_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceCreateResponse { id }))
     }
@@ -319,7 +317,7 @@ impl SliceService for SliceServer {
         ).await;
         match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SLICE_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceChangeResponse { }))
     }
@@ -332,7 +330,7 @@ impl SliceService for SliceServer {
         let result = self.resource_db.delete_slice_set(request.id).await;
         match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SLICE_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceChangeResponse { }))
     }

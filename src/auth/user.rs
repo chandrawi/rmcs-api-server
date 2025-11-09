@@ -7,9 +7,7 @@ use rmcs_auth_api::user::{
     UserReadResponse, UserListResponse, UserCreateResponse, UserChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
-use super::{
-    USER_NOT_FOUND, USER_CREATE_ERR, USER_UPDATE_ERR, USER_DELETE_ERR, ADD_ROLE_ERR, RMV_ROLE_ERR
-};
+use crate::utility::handle_error;
 
 pub struct UserServer {
     pub auth_db: Auth,
@@ -37,7 +35,7 @@ impl UserService for UserServer {
         let result = self.auth_db.read_user(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserReadResponse { result }))
     }
@@ -50,7 +48,7 @@ impl UserService for UserServer {
         let result = self.auth_db.read_user_by_name(&request.name).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserReadResponse { result }))
     }
@@ -65,7 +63,7 @@ impl UserService for UserServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserListResponse { results }))
     }
@@ -78,7 +76,7 @@ impl UserService for UserServer {
         let result = self.auth_db.list_user_by_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserListResponse { results }))
     }
@@ -91,7 +89,7 @@ impl UserService for UserServer {
         let result = self.auth_db.list_user_by_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserListResponse { results }))
     }
@@ -104,7 +102,7 @@ impl UserService for UserServer {
         let result = self.auth_db.list_user_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserListResponse { results }))
     }
@@ -121,7 +119,7 @@ impl UserService for UserServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(USER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserListResponse { results }))
     }
@@ -140,7 +138,7 @@ impl UserService for UserServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(USER_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -160,7 +158,7 @@ impl UserService for UserServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(USER_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserChangeResponse { }))
     }
@@ -174,7 +172,7 @@ impl UserService for UserServer {
         let result = self.auth_db.delete_user(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(USER_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserChangeResponse { }))
     }
@@ -190,7 +188,7 @@ impl UserService for UserServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ADD_ROLE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserChangeResponse { }))
     }
@@ -206,7 +204,7 @@ impl UserService for UserServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(RMV_ROLE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserChangeResponse { }))
     }

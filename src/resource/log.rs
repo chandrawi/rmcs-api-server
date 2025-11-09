@@ -11,9 +11,7 @@ use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
     READ_LOG, CREATE_LOG, UPDATE_LOG, DELETE_LOG
 };
-use super::{
-    LOG_NOT_FOUND, LOG_CREATE_ERR, LOG_UPDATE_ERR, LOG_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 #[derive(Debug)]
 pub struct LogServer {
@@ -46,7 +44,7 @@ impl LogService for LogServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(LOG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogReadResponse { result }))
     }
@@ -63,7 +61,7 @@ impl LogService for LogServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(LOG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogListResponse { results }))
     }
@@ -80,7 +78,7 @@ impl LogService for LogServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(LOG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogListResponse { results }))
     }
@@ -98,7 +96,7 @@ impl LogService for LogServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(LOG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogListResponse { results }))
     }
@@ -119,7 +117,7 @@ impl LogService for LogServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(LOG_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogChangeResponse { }))
     }
@@ -142,7 +140,7 @@ impl LogService for LogServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(LOG_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogChangeResponse { }))
     }
@@ -158,7 +156,7 @@ impl LogService for LogServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(LOG_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogChangeResponse { }))
     }

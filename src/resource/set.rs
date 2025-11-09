@@ -13,9 +13,7 @@ use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
     READ_SET, CREATE_SET, UPDATE_SET, DELETE_SET, CHANGE_SET_MEMBER
 };
-use super::{
-    SET_NOT_FOUND, SET_CREATE_ERR, SET_UPDATE_ERR, SET_DELETE_ERR, SET_ADD_ERR, SET_RMV_ERR, SET_SWP_ERR
-};
+use crate::utility::handle_error;
 
 pub struct SetServer {
     resource_db: Resource,
@@ -44,7 +42,7 @@ impl SetService for SetServer {
         let result = self.resource_db.read_set(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetReadResponse { result }))
     }
@@ -59,7 +57,7 @@ impl SetService for SetServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetListResponse { results }))
     }
@@ -72,7 +70,7 @@ impl SetService for SetServer {
         let result = self.resource_db.list_set_by_template(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetListResponse { results }))
     }
@@ -85,7 +83,7 @@ impl SetService for SetServer {
         let result = self.resource_db.list_set_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetListResponse { results }))
     }
@@ -101,7 +99,7 @@ impl SetService for SetServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetListResponse { results }))
     }
@@ -119,7 +117,7 @@ impl SetService for SetServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SET_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -137,7 +135,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetChangeResponse { }))
     }
@@ -150,7 +148,7 @@ impl SetService for SetServer {
         let result = self.resource_db.delete_set(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetChangeResponse { }))
     }
@@ -168,7 +166,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_ADD_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetChangeResponse { }))
     }
@@ -185,7 +183,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_RMV_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetChangeResponse { }))
     }
@@ -204,7 +202,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_SWP_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SetChangeResponse { }))
     }
@@ -217,7 +215,7 @@ impl SetService for SetServer {
         let result = self.resource_db.read_set_template(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateReadResponse { result }))
     }
@@ -232,7 +230,7 @@ impl SetService for SetServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateListResponse { results }))
     }
@@ -245,7 +243,7 @@ impl SetService for SetServer {
         let result = self.resource_db.list_set_template_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateListResponse { results }))
     }
@@ -260,7 +258,7 @@ impl SetService for SetServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(SET_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateListResponse { results }))
     }
@@ -277,7 +275,7 @@ impl SetService for SetServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(SET_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -294,7 +292,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateChangeResponse { }))
     }
@@ -307,7 +305,7 @@ impl SetService for SetServer {
         let result = self.resource_db.delete_set_template(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateChangeResponse { }))
     }
@@ -325,7 +323,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_ADD_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateChangeResponse { }))
     }
@@ -341,7 +339,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_RMV_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateChangeResponse { }))
     }
@@ -358,7 +356,7 @@ impl SetService for SetServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(SET_SWP_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TemplateChangeResponse { }))
     }

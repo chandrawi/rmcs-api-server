@@ -7,9 +7,7 @@ use rmcs_auth_api::role::{
     RoleReadResponse, RoleListResponse, RoleCreateResponse, RoleChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
-use super::{
-    ROLE_NOT_FOUND, ROLE_CREATE_ERR, ROLE_UPDATE_ERR, ROLE_DELETE_ERR, ADD_ACCESS_ERR, RMV_ACCESS_ERR
-};
+use crate::utility::handle_error;
 
 pub struct RoleServer {
     pub auth_db: Auth,
@@ -36,7 +34,7 @@ impl RoleService for RoleServer {
         let result = self.auth_db.read_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleReadResponse { result }))
     }
@@ -52,7 +50,7 @@ impl RoleService for RoleServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleReadResponse { result }))
     }
@@ -67,7 +65,7 @@ impl RoleService for RoleServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleListResponse { results }))
     }
@@ -80,7 +78,7 @@ impl RoleService for RoleServer {
         let result = self.auth_db.list_role_by_api(Uuid::from_slice(&request.api_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleListResponse { results }))
     }
@@ -93,7 +91,7 @@ impl RoleService for RoleServer {
         let result = self.auth_db.list_role_by_user(Uuid::from_slice(&request.user_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleListResponse { results }))
     }
@@ -106,7 +104,7 @@ impl RoleService for RoleServer {
         let result = self.auth_db.list_role_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleListResponse { results }))
     }
@@ -123,7 +121,7 @@ impl RoleService for RoleServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(ROLE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleListResponse { results }))
     }
@@ -144,7 +142,7 @@ impl RoleService for RoleServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(ROLE_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -164,7 +162,7 @@ impl RoleService for RoleServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ROLE_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleChangeResponse { }))
     }
@@ -177,7 +175,7 @@ impl RoleService for RoleServer {
         let result = self.auth_db.delete_role(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ROLE_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleChangeResponse { }))
     }
@@ -193,7 +191,7 @@ impl RoleService for RoleServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ADD_ACCESS_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleChangeResponse { }))
     }
@@ -209,7 +207,7 @@ impl RoleService for RoleServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(RMV_ACCESS_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(RoleChangeResponse { }))
     }

@@ -10,11 +10,10 @@ use rmcs_auth_api::auth::{
     UserRefreshRequest, UserRefreshResponse, UserLogoutRequest, UserLogoutResponse,
     ProcedureMap, AccessTokenMap
 };
-use crate::utility::{self, token, config::{ROOT_ID, ROOT_NAME, ROOT_DATA, API_KEY, USER_KEY, TransportKey}};
+use crate::utility::{self, token, handle_error, config::{ROOT_ID, ROOT_NAME, ROOT_DATA, API_KEY, USER_KEY, TransportKey}};
 use super::{
-    API_ID_NOT_FOUND, USERNAME_NOT_FOUND, KEY_IMPORT_ERR, DECRYPT_ERR, ENCRYPT_ERR, PASSWORD_MISMATCH,
-    TOKEN_NOT_FOUND, CREATE_TOKEN_ERR, UPDATE_TOKEN_ERR, DELETE_TOKEN_ERR,
-    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED, API_UPDATE_ERR
+    KEY_IMPORT_ERR, DECRYPT_ERR, ENCRYPT_ERR, PASSWORD_MISMATCH,
+    GENERATE_TOKEN_ERR, TOKEN_MISMATCH, TOKEN_UNVERIFIED, TOKEN_NOT_FOUND
 };
 
 pub struct AuthServer {
@@ -61,7 +60,7 @@ impl AuthService for AuthServer {
                 // update api with generated access key
                 let key = generate_access_key();
                 self.auth_db.update_api(id, None, None, None, None, None, Some(&key)).await
-                    .map_err(|_| Status::internal(API_UPDATE_ERR))?;
+                    .map_err(|e| handle_error(e))?;
                 let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
                 let root_key = utility::encrypt_message(&root.access_key, pub_key.clone())
                     .map_err(|_| Status::internal(ENCRYPT_ERR))?;
@@ -72,7 +71,7 @@ impl AuthService for AuthServer {
                     .collect();
                 (root_key, access_key, procedures)
             },
-            Err(_) => return Err(Status::not_found(API_ID_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiLoginResponse { root_key, access_key, access_procedures }))
     }
@@ -99,7 +98,7 @@ impl AuthService for AuthServer {
             Ok(root.into())
         } else {
             self.auth_db.read_user_by_name(&request.username).await
-                .map_err(|_| Status::not_found(USERNAME_NOT_FOUND))
+                .map_err(|e| handle_error(e))
         };
         let (user_id, auth_token, access_tokens) = match result {
             Ok(user) => {
@@ -123,7 +122,7 @@ impl AuthService for AuthServer {
                 let multi = user.roles.iter().map(|e| e.multi).filter(|&e| !e).count();
                 if multi > 0 {
                     self.auth_db.delete_token_by_user(user.id).await
-                    .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
+                    .map_err(|e| handle_error(e))?;
                 }
                 let ip_lock = user.roles.iter().map(|e| e.ip_lock).filter(|&e| e).count();
                 if ip_lock == 0 {
@@ -136,7 +135,7 @@ impl AuthService for AuthServer {
                 let mut iter_tokens = self.auth_db
                     .create_auth_token(user.id, expire, &remote_ip, user.roles.len() as u32)
                     .await
-                    .map_err(|_| Status::internal(CREATE_TOKEN_ERR))?
+                    .map_err(|e| handle_error(e))?
                     .into_iter();
                 let mut auth_token = String::new();
                 // generate access tokens using data from user role and generated access id
@@ -178,9 +177,9 @@ impl AuthService for AuthServer {
                     .map_err(|_| Status::internal(TOKEN_UNVERIFIED))?;
                 (api.access_key, token_claims)
             },
-            Err(_) => {
+            Err(e) => {
                 if request.api_id != ROOT_ID.as_bytes().to_vec() {
-                    return Err(Status::not_found(API_ID_NOT_FOUND));
+                    return Err(handle_error(e));
                 }
                 let root = ROOT_DATA.get().map(|x| x.to_owned()).unwrap_or_default();
                 let token_claims = token::decode_token(&request.access_token, &root.access_key, false)
@@ -201,7 +200,7 @@ impl AuthService for AuthServer {
                 if token.refresh_token == request.refresh_token && ip_match {
                     let (refresh_token, _) = self.auth_db
                         .update_access_token(token_claims.jti, Some(token.expire), None).await
-                        .map_err(|_| Status::internal(UPDATE_TOKEN_ERR))?;
+                        .map_err(|e| handle_error(e))?;
                     let duration = (token_claims.exp - token_claims.iat) as i32;
                     let access_token = token::generate_token(token_claims.jti, &token_claims.sub, duration, &access_key)
                         .map_err(|_| Status::internal(GENERATE_TOKEN_ERR))?;
@@ -210,7 +209,7 @@ impl AuthService for AuthServer {
                     return Err(Status::invalid_argument(TOKEN_MISMATCH))
                 }
             },
-            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(UserRefreshResponse { refresh_token, access_token }))
     }
@@ -223,13 +222,13 @@ impl AuthService for AuthServer {
         let result = self.auth_db.list_auth_token(&request.auth_token).await;
         let tokens = match result {
             Ok(tokens) => tokens,
-            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         match tokens.into_iter().next() {
             Some(token) => {
                 if token.user_id.as_bytes().to_vec() == request.user_id {
                     self.auth_db.delete_auth_token(&request.auth_token).await
-                        .map_err(|_| Status::internal(DELETE_TOKEN_ERR))?;
+                        .map_err(|e| handle_error(e))?;
                 } else {
                     return Err(Status::invalid_argument(TOKEN_MISMATCH));
                 }

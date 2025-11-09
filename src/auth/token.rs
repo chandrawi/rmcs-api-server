@@ -9,9 +9,7 @@ use rmcs_auth_api::token::{
     TokenUpdateResponse, TokenChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
-use super::{
-    TOKEN_NOT_FOUND, TOKEN_CREATE_ERR, TOKEN_UPDATE_ERR, TOKEN_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 pub struct TokenServer {
     pub auth_db: Auth,
@@ -38,7 +36,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.read_access_token(request.access_id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenReadResponse { result }))
     }
@@ -51,7 +49,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.list_auth_token(&request.auth_token).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenListResponse { results }))
     }
@@ -64,7 +62,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.list_token_by_user(Uuid::from_slice(&request.user_id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(TOKEN_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenListResponse { results }))
     }
@@ -82,7 +80,7 @@ impl TokenService for TokenServer {
         ).await;
         let (access_id, refresh_token, auth_token) = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(TOKEN_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenCreateResponse { access_id, refresh_token, auth_token }))
     }
@@ -105,7 +103,7 @@ impl TokenService for TokenServer {
                     refresh_token: t.1,
                     auth_token: t.2
                 }).collect(),
-            Err(_) => return Err(Status::internal(TOKEN_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(AuthTokenCreateResponse { tokens }))
     }
@@ -122,7 +120,7 @@ impl TokenService for TokenServer {
         ).await;
         let (refresh_token, auth_token) = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(TOKEN_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenUpdateResponse { refresh_token, auth_token }))
     }
@@ -139,7 +137,7 @@ impl TokenService for TokenServer {
         ).await;
         let (refresh_token, auth_token) = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(TOKEN_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenUpdateResponse { refresh_token, auth_token }))
     }
@@ -152,7 +150,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.delete_access_token(request.access_id).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(TOKEN_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenChangeResponse { }))
     }
@@ -165,7 +163,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.delete_auth_token(&request.auth_token).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(TOKEN_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenChangeResponse { }))
     }
@@ -178,7 +176,7 @@ impl TokenService for TokenServer {
         let result = self.auth_db.delete_token_by_user(Uuid::from_slice(&request.user_id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(TOKEN_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TokenChangeResponse { }))
     }

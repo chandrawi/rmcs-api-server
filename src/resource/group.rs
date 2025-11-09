@@ -12,9 +12,7 @@ use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
     READ_GROUP, CREATE_GROUP, UPDATE_GROUP, DELETE_GROUP, CHANGE_GROUP_MEMBER
 };
-use super::{
-    GROUP_NOT_FOUND, GROUP_CREATE_ERR, GROUP_UPDATE_ERR, GROUP_DELETE_ERR, GROUP_ADD_ERR, GROUP_RMV_ERR
-};
+use crate::utility::handle_error;
 
 pub struct GroupServer {
     resource_db: Resource,
@@ -43,7 +41,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.read_group_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupModelReadResponse { result }))
     }
@@ -56,7 +54,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.list_group_model_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupModelListResponse { results }))
     }
@@ -71,7 +69,7 @@ impl GroupService for GroupServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupModelListResponse { results }))
     }
@@ -84,7 +82,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.list_group_model_by_category(&request.category).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupModelListResponse { results }))
     }
@@ -100,7 +98,7 @@ impl GroupService for GroupServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupModelListResponse { results }))
     }
@@ -118,7 +116,7 @@ impl GroupService for GroupServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(GROUP_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -136,7 +134,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -149,7 +147,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.delete_group_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -165,7 +163,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_ADD_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -181,7 +179,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_RMV_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -194,7 +192,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.read_group_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceReadResponse { result }))
     }
@@ -209,7 +207,7 @@ impl GroupService for GroupServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -222,7 +220,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.list_group_device_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -235,7 +233,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.list_group_device_by_category(&request.category).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -251,7 +249,7 @@ impl GroupService for GroupServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -269,7 +267,7 @@ impl GroupService for GroupServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(GROUP_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -287,7 +285,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -300,7 +298,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.delete_group_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -316,7 +314,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_ADD_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -332,7 +330,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_RMV_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -345,7 +343,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.read_group_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceReadResponse { result }))
     }
@@ -360,7 +358,7 @@ impl GroupService for GroupServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -373,7 +371,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.list_group_gateway_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -386,7 +384,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.list_group_gateway_by_category(&request.category).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -402,7 +400,7 @@ impl GroupService for GroupServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GROUP_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupDeviceListResponse { results }))
     }
@@ -420,7 +418,7 @@ impl GroupService for GroupServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(GROUP_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -438,7 +436,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -451,7 +449,7 @@ impl GroupService for GroupServer {
         let result = self.resource_db.delete_group_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -467,7 +465,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_ADD_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }
@@ -483,7 +481,7 @@ impl GroupService for GroupServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GROUP_RMV_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GroupChangeResponse { }))
     }

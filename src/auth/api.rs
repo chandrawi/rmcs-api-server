@@ -9,10 +9,7 @@ use rmcs_auth_api::api::{
     ProcedureReadResponse, ProcedureListResponse, ProcedureCreateResponse, ProcedureChangeResponse
 };
 use crate::utility::validator::{AuthValidator, ValidatorKind};
-use super::{
-    API_NOT_FOUND, API_CREATE_ERR, API_UPDATE_ERR, API_DELETE_ERR, 
-    PROC_NOT_FOUND, PROC_CREATE_ERR, PROC_UPDATE_ERR, PROC_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 pub struct ApiServer {
     pub auth_db: Auth,
@@ -39,7 +36,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.read_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(API_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiReadResponse { result }))
     }
@@ -52,7 +49,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.read_api_by_name(&request.name).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(API_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiReadResponse { result }))
     }
@@ -67,7 +64,7 @@ impl ApiService for ApiServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(API_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiListResponse { results }))
     }
@@ -80,7 +77,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.list_api_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(API_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiListResponse { results }))
     }
@@ -93,7 +90,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.list_api_by_category(&request.category).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(API_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiListResponse { results }))
     }
@@ -109,7 +106,7 @@ impl ApiService for ApiServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(API_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiListResponse { results }))
     }
@@ -130,7 +127,7 @@ impl ApiService for ApiServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(API_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -151,7 +148,7 @@ impl ApiService for ApiServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(API_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiChangeResponse { }))
     }
@@ -164,7 +161,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.delete_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(API_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ApiChangeResponse { }))
     }
@@ -177,7 +174,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.read_procedure(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureReadResponse { result }))
     }
@@ -193,7 +190,7 @@ impl ApiService for ApiServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureReadResponse { result }))
     }
@@ -208,7 +205,7 @@ impl ApiService for ApiServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureListResponse { results }))
     }
@@ -221,7 +218,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.list_procedure_by_api(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureListResponse { results }))
     }
@@ -234,7 +231,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.list_procedure_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureListResponse { results }))
     }
@@ -250,7 +247,7 @@ impl ApiService for ApiServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(PROC_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureListResponse { results }))
     }
@@ -268,7 +265,7 @@ impl ApiService for ApiServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(PROC_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -285,7 +282,7 @@ impl ApiService for ApiServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(PROC_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureChangeResponse { }))
     }
@@ -298,7 +295,7 @@ impl ApiService for ApiServer {
         let result = self.auth_db.delete_procedure(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(PROC_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ProcedureChangeResponse { }))
     }

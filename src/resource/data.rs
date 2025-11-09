@@ -13,9 +13,7 @@ use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
     READ_DATA, CREATE_DATA, DELETE_DATA
 };
-use super::{
-    DATA_NOT_FOUND, DATA_CREATE_ERR, DATA_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 #[derive(Debug)]
 pub struct DataServer {
@@ -49,7 +47,7 @@ impl DataService for DataServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataReadResponse { result }))
     }
@@ -66,7 +64,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -84,7 +82,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -102,7 +100,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -120,7 +118,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -137,7 +135,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -154,7 +152,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -172,7 +170,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -190,7 +188,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -208,7 +206,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -224,7 +222,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -240,7 +238,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -257,7 +255,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -274,7 +272,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -291,7 +289,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataListResponse { results }))
     }
@@ -307,7 +305,7 @@ impl DataService for DataServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataSetReadResponse { result }))
     }
@@ -323,7 +321,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataSetListResponse { results }))
     }
@@ -340,7 +338,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataSetListResponse { results }))
     }
@@ -357,7 +355,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataSetListResponse { results }))
     }
@@ -374,7 +372,7 @@ impl DataService for DataServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataSetListResponse { results }))
     }
@@ -395,7 +393,7 @@ impl DataService for DataServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(DATA_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataChangeResponse { }))
     }
@@ -422,7 +420,7 @@ impl DataService for DataServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(DATA_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataChangeResponse { }))
     }
@@ -439,7 +437,7 @@ impl DataService for DataServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataChangeResponse { }))
     }
@@ -456,7 +454,7 @@ impl DataService for DataServer {
         ).await;
         let timestamp = match result {
             Ok(value) => value.timestamp_micros(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
@@ -473,7 +471,7 @@ impl DataService for DataServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -491,7 +489,7 @@ impl DataService for DataServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -508,7 +506,7 @@ impl DataService for DataServer {
         ).await;
         let timestamp = match result {
             Ok(value) => value.timestamp_micros(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
@@ -525,7 +523,7 @@ impl DataService for DataServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -543,7 +541,7 @@ impl DataService for DataServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -559,7 +557,7 @@ impl DataService for DataServer {
         ).await;
         let timestamp = match result {
             Ok(value) => value.timestamp_micros(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
@@ -575,7 +573,7 @@ impl DataService for DataServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -592,7 +590,7 @@ impl DataService for DataServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(DATA_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -608,7 +606,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -625,7 +623,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -643,7 +641,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -659,7 +657,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -676,7 +674,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -694,7 +692,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -709,7 +707,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -725,7 +723,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }
@@ -742,7 +740,7 @@ impl DataService for DataServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::internal(DATA_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataCountResponse { count }))
     }

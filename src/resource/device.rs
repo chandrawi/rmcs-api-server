@@ -11,13 +11,7 @@ use super::{
     READ_DEVICE_CONFIG, CREATE_DEVICE_CONFIG, UPDATE_DEVICE_CONFIG, DELETE_DEVICE_CONFIG,
     READ_TYPE, CREATE_TYPE, UPDATE_TYPE, DELETE_TYPE, CHANGE_TYPE_MODEL
 };
-use super::{
-    DEVICE_NOT_FOUND, DEVICE_CREATE_ERR, DEVICE_UPDATE_ERR, DEVICE_DELETE_ERR,
-    GATEWAY_NOT_FOUND, GATEWAY_CREATE_ERR, GATEWAY_UPDATE_ERR, GATEWAY_DELETE_ERR,
-    CFG_NOT_FOUND, CFG_CREATE_ERR, CFG_UPDATE_ERR, CFG_DELETE_ERR,
-    TYPE_NOT_FOUND, TYPE_CREATE_ERR, TYPE_UPDATE_ERR, TYPE_DELETE_ERR,
-    ADD_TYPE_ERR, RMV_TYPE_ERR
-};
+use crate::utility::handle_error;
 
 #[derive(Debug)]
 pub struct DeviceServer {
@@ -46,7 +40,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.read_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceReadResponse { result }))
     }
@@ -59,7 +53,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.read_device_by_sn(&request.serial_number).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceReadResponse { result }))
     }
@@ -74,7 +68,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceListResponse { results }))
     }
@@ -87,7 +81,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_device_by_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceListResponse { results }))
     }
@@ -100,7 +94,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_device_by_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceListResponse { results }))
     }
@@ -113,7 +107,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_device_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceListResponse { results }))
     }
@@ -130,7 +124,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceListResponse { results }))
     }
@@ -150,7 +144,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(DEVICE_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceCreateResponse { id: request.id }))
     }
@@ -170,7 +164,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(DEVICE_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceChangeResponse { }))
     }
@@ -183,7 +177,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.delete_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(DEVICE_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DeviceChangeResponse { }))
     }
@@ -196,7 +190,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.read_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayReadResponse { result }))
     }
@@ -209,7 +203,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.read_gateway_by_sn(&request.serial_number).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayReadResponse { result }))
     }
@@ -224,7 +218,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayListResponse { results }))
     }
@@ -237,7 +231,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_gateway_by_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayListResponse { results }))
     }
@@ -250,7 +244,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_gateway_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayListResponse { results }))
     }
@@ -266,7 +260,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(GATEWAY_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayListResponse { results }))
     }
@@ -285,7 +279,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GATEWAY_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayCreateResponse { id: request.id }))
     }
@@ -304,7 +298,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GATEWAY_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayChangeResponse { }))
     }
@@ -317,7 +311,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.delete_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(GATEWAY_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(GatewayChangeResponse { }))
     }
@@ -330,7 +324,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.read_device_config(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigReadResponse { result }))
     }
@@ -343,7 +337,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_device_config_by_device(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigListResponse { results }))
     }
@@ -364,7 +358,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(CFG_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigCreateResponse { id }))
     }
@@ -387,7 +381,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(CFG_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigChangeResponse { }))
     }
@@ -400,7 +394,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.delete_device_config(request.id).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(CFG_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigChangeResponse { }))
     }
@@ -413,7 +407,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.read_gateway_config(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigReadResponse { result }))
     }
@@ -426,7 +420,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_gateway_config_by_gateway(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigListResponse { results }))
     }
@@ -447,7 +441,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(CFG_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigCreateResponse { id }))
     }
@@ -470,7 +464,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(CFG_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigChangeResponse { }))
     }
@@ -483,7 +477,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.delete_gateway_config(request.id).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(CFG_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigChangeResponse { }))
     }
@@ -496,7 +490,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.read_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(TYPE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeReadResponse { result }))
     }
@@ -511,7 +505,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(DEVICE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeListResponse { results }))
     }
@@ -524,7 +518,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_type_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(TYPE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeListResponse { results }))
     }
@@ -537,7 +531,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.list_type_option(request.name.as_deref()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(TYPE_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeListResponse { results }))
     }
@@ -554,7 +548,7 @@ impl DeviceService for DeviceServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(TYPE_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -571,7 +565,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(TYPE_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeChangeResponse { }))
     }
@@ -584,7 +578,7 @@ impl DeviceService for DeviceServer {
         let result = self.resource_db.delete_type(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(TYPE_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeChangeResponse { }))
     }
@@ -600,7 +594,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(ADD_TYPE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeChangeResponse { }))
     }
@@ -616,7 +610,7 @@ impl DeviceService for DeviceServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(RMV_TYPE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TypeChangeResponse { }))
     }

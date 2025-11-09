@@ -13,10 +13,7 @@ use super::{
     READ_MODEL, CREATE_MODEL, UPDATE_MODEL, DELETE_MODEL,
     READ_MODEL_CONFIG, CREATE_MODEL_CONFIG, UPDATE_MODEL_CONFIG, DELETE_MODEL_CONFIG
 };
-use super::{
-    MODEL_NOT_FOUND, MODEL_CREATE_ERR, MODEL_UPDATE_ERR, MODEL_DELETE_ERR,
-    CFG_NOT_FOUND, CFG_CREATE_ERR, CFG_UPDATE_ERR, CFG_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 #[derive(Debug)]
 pub struct ModelServer {
@@ -46,7 +43,7 @@ impl ModelService for ModelServer {
         let result = self.resource_db.read_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelReadResponse { result }))
     }
@@ -61,7 +58,7 @@ impl ModelService for ModelServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelListResponse { results }))
     }
@@ -76,7 +73,7 @@ impl ModelService for ModelServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelListResponse { results }))
     }
@@ -89,7 +86,7 @@ impl ModelService for ModelServer {
         let result = self.resource_db.list_model_by_name(&request.name).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelListResponse { results }))
     }
@@ -102,7 +99,7 @@ impl ModelService for ModelServer {
         let result = self.resource_db.list_model_by_category(&request.category).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelListResponse { results }))
     }
@@ -119,7 +116,7 @@ impl ModelService for ModelServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(MODEL_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelListResponse { results }))
     }
@@ -139,7 +136,7 @@ impl ModelService for ModelServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(MODEL_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelCreateResponse { id: id.as_bytes().to_vec() }))
     }
@@ -163,7 +160,7 @@ impl ModelService for ModelServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(MODEL_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelChangeResponse { }))
     }
@@ -176,7 +173,7 @@ impl ModelService for ModelServer {
         let result = self.resource_db.delete_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(MODEL_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ModelChangeResponse { }))
     }
@@ -189,7 +186,7 @@ impl ModelService for ModelServer {
         let result = self.resource_db.read_model_config(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigReadResponse { result }))
     }
@@ -202,7 +199,7 @@ impl ModelService for ModelServer {
         let result = self.resource_db.list_model_config_by_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(CFG_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigListResponse { results }))
     }
@@ -224,7 +221,7 @@ impl ModelService for ModelServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(CFG_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigCreateResponse { id }))
     }
@@ -247,7 +244,7 @@ impl ModelService for ModelServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(CFG_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigChangeResponse { }))
     }
@@ -260,7 +257,7 @@ impl ModelService for ModelServer {
         let result = self.resource_db.delete_model_config(request.id).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(CFG_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigChangeResponse { }))
     }

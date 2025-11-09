@@ -14,9 +14,7 @@ use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
     READ_BUFFER, CREATE_BUFFER, UPDATE_BUFFER, DELETE_BUFFER
 };
-use super::{
-    BUFFER_NOT_FOUND, BUFFER_CREATE_ERR, BUFFER_UPDATE_ERR, BUFFER_DELETE_ERR
-};
+use crate::utility::handle_error;
 
 #[derive(Debug)]
 pub struct BufferServer {
@@ -46,7 +44,7 @@ impl BufferService for BufferServer {
         let result = self.resource_db.read_buffer(request.id).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferReadResponse { result }))
     }
@@ -64,7 +62,7 @@ impl BufferService for BufferServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferReadResponse { result }))
     }
@@ -82,7 +80,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -101,7 +99,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -120,7 +118,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -139,7 +137,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -156,7 +154,7 @@ impl BufferService for BufferServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferReadResponse { result }))
     }
@@ -173,7 +171,7 @@ impl BufferService for BufferServer {
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferReadResponse { result }))
     }
@@ -191,7 +189,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -210,7 +208,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -228,7 +226,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -247,7 +245,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -265,7 +263,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -283,7 +281,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -302,7 +300,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -321,7 +319,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -340,7 +338,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -358,7 +356,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -377,7 +375,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -395,7 +393,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -414,7 +412,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -431,7 +429,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -448,7 +446,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -466,7 +464,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -484,7 +482,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -502,7 +500,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -519,7 +517,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -537,7 +535,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -554,7 +552,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -572,7 +570,7 @@ impl BufferService for BufferServer {
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferListResponse { results }))
     }
@@ -594,7 +592,7 @@ impl BufferService for BufferServer {
         ).await;
         let id = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(BUFFER_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferCreateResponse { id }))
     }
@@ -623,7 +621,7 @@ impl BufferService for BufferServer {
         ).await;
         let ids = match result {
             Ok(value) => value,
-            Err(_) => return Err(Status::internal(BUFFER_CREATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferCreateMultipleResponse { ids }))
     }
@@ -645,7 +643,7 @@ impl BufferService for BufferServer {
         ).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(BUFFER_UPDATE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferChangeResponse { }))
     }
@@ -658,7 +656,7 @@ impl BufferService for BufferServer {
         let result = self.resource_db.delete_buffer(request.id).await;
         match result {
             Ok(_) => (),
-            Err(_) => return Err(Status::internal(BUFFER_DELETE_ERR))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferChangeResponse { }))
     }
@@ -675,7 +673,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamp = match result {
             Ok(value) => value.timestamp_micros(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
@@ -692,7 +690,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamp = match result {
             Ok(value) => value.timestamp_micros(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
@@ -710,7 +708,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -728,7 +726,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -746,7 +744,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -764,7 +762,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -781,7 +779,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -798,7 +796,7 @@ impl BufferService for BufferServer {
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
@@ -815,7 +813,7 @@ impl BufferService for BufferServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferCountResponse { count }))
     }
@@ -832,7 +830,7 @@ impl BufferService for BufferServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferCountResponse { count }))
     }
@@ -848,7 +846,7 @@ impl BufferService for BufferServer {
         ).await;
         let count = match result {
             Ok(value) => value as u32,
-            Err(_) => return Err(Status::not_found(BUFFER_NOT_FOUND))
+            Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferCountResponse { count }))
     }
