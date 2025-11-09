@@ -4,10 +4,10 @@ use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue, BufferStatus};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::buffer::{
-    BufferSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate,
+    BufferSchema, BufferMultipleSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate,
     BufferIdsTime, BufferIdsRange, BufferIdsNumber, BufferIdsSelector, BuffersIdsSelector,
     BufferSetTime, BufferSetRange, BufferSetNumber, BufferSetSelector, BuffersSetSelector,
-    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferChangeResponse, BufferCountResponse,
+    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferCreateMultipleResponse, BufferChangeResponse, BufferCountResponse,
     TimestampReadResponse, TimestampListResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
@@ -597,6 +597,35 @@ impl BufferService for BufferServer {
             Err(_) => return Err(Status::internal(BUFFER_CREATE_ERR))
         };
         Ok(Response::new(BufferCreateResponse { id }))
+    }
+
+    async fn create_buffer_multiple(&self, request: Request<BufferMultipleSchema>)
+        -> Result<Response<BufferCreateMultipleResponse>, Status>
+    {
+        self.validate(request.extensions(), CREATE_BUFFER)?;
+        let request = request.into_inner();
+        let (device_ids, model_ids, timestamps, data_multiple, statuses) = request.schemas.into_iter().map(|r| {(
+            Uuid::from_slice(&r.device_id).unwrap_or_default(),
+            Uuid::from_slice(&r.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(&r.timestamp * 1000),
+            ArrayDataValue::from_bytes(
+                &r.data_bytes,
+                &r.data_type.iter().map(|&e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
+            ).to_vec(),
+            BufferStatus::from(r.status as i16)
+        )}).collect();
+        let result = self.resource_db.create_buffer_multiple(
+            device_ids,
+            model_ids,
+            timestamps,
+            data_multiple,
+            statuses
+        ).await;
+        let ids = match result {
+            Ok(value) => value,
+            Err(_) => return Err(Status::internal(BUFFER_CREATE_ERR))
+        };
+        Ok(Response::new(BufferCreateMultipleResponse { ids }))
     }
 
     async fn update_buffer(&self, request: Request<BufferUpdate>)

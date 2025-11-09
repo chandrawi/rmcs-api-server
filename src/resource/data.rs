@@ -4,7 +4,7 @@ use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::data::{
-    DataSchema, DataId, DataTime, DataRange, DataNumber, DataIds, DataIdsTime, DataIdsRange, DataIdsNumber,
+    DataSchema, DataMultipleSchema, DataId, DataTime, DataRange, DataNumber, DataIds, DataIdsTime, DataIdsRange, DataIdsNumber,
     DataSetId, DataSetTime, DataSetRange, DataSetNumber,
     DataReadResponse, DataListResponse, DataChangeResponse, DataSetReadResponse, DataSetListResponse, DataCountResponse,
     TimestampReadResponse, TimestampListResponse
@@ -392,6 +392,33 @@ impl DataService for DataServer {
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
             ).to_vec()
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(_) => return Err(Status::internal(DATA_CREATE_ERR))
+        };
+        Ok(Response::new(DataChangeResponse { }))
+    }
+
+    async fn create_data_multiple(&self, request: Request<DataMultipleSchema>)
+        -> Result<Response<DataChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), CREATE_DATA)?;
+        let request = request.into_inner();
+        let (device_ids, model_ids, timestamps, data_multiple) = request.schemas.into_iter().map(|r| {(
+            Uuid::from_slice(&r.device_id).unwrap_or_default(),
+            Uuid::from_slice(&r.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(&r.timestamp * 1000),
+            ArrayDataValue::from_bytes(
+                &r.data_bytes,
+                &r.data_type.iter().map(|&e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
+            ).to_vec()
+        )}).collect();
+        let result = self.resource_db.create_data_multiple(
+            device_ids,
+            model_ids,
+            timestamps,
+            data_multiple
         ).await;
         match result {
             Ok(_) => (),
