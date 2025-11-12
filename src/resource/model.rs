@@ -5,8 +5,10 @@ use rmcs_resource_api::model::model_service_server::ModelService;
 use rmcs_resource_api::model::{
     ModelSchema, ModelId, ModelIds, ModelName, ModelCategory, ModelOption, TypeId, ModelUpdate,
     ConfigSchema, ConfigId, ConfigUpdate,
+    TagSchema, TagId, TagUpdate,
     ModelReadResponse, ModelListResponse, ModelCreateResponse, ModelChangeResponse,
-    ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse
+    ConfigReadResponse, ConfigListResponse, ConfigCreateResponse, ConfigChangeResponse,
+    TagReadResponse, TagListResponse, TagChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -260,6 +262,92 @@ impl ModelService for ModelServer {
             Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(ConfigChangeResponse { }))
+    }
+
+    async fn read_tag(&self, request: Request<TagId>)
+        -> Result<Response<TagReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_MODEL_CONFIG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_tag(
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            request.tag as i16
+        ).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TagReadResponse { result }))
+    }
+
+    async fn list_tag_by_model(&self, request: Request<ModelId>)
+        -> Result<Response<TagListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_MODEL_CONFIG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_tag_by_model(Uuid::from_slice(&request.id).unwrap_or_default()).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TagListResponse { results }))
+    }
+
+    async fn create_tag(&self, request: Request<TagSchema>)
+        -> Result<Response<TagChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), CREATE_MODEL_CONFIG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.create_tag(
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            request.tag as i16,
+            &request.name,
+            request.members.into_iter().map(|t| t as i16).collect()
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TagChangeResponse { }))
+    }
+
+    async fn update_tag(&self, request: Request<TagUpdate>)
+        -> Result<Response<TagChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), UPDATE_MODEL_CONFIG)?;
+        let request = request.into_inner();
+        let members = if request.members_flag {
+            Some(request.members.into_iter().map(|t| t as i16).collect())
+        } else {
+            None
+        };
+        let result = self.resource_db.update_tag(
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            request.tag as i16,
+            request.name.as_deref(),
+            members
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TagChangeResponse { }))
+    }
+
+    async fn delete_tag(&self, request: Request<TagId>)
+        -> Result<Response<TagChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), DELETE_MODEL_CONFIG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.delete_tag(
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            request.tag as i16
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TagChangeResponse { }))
     }
 
 }

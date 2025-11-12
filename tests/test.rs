@@ -12,7 +12,7 @@ mod tests {
     use rmcs_auth_api::auth::auth_service_client::AuthServiceClient;
     use rmcs_auth_api::auth::{UserKeyRequest, UserLoginRequest, UserRefreshRequest, UserLogoutRequest};
     use rmcs_resource_api::model::model_service_client::ModelServiceClient;
-    use rmcs_resource_api::model::{ModelSchema, ModelId};
+    use rmcs_resource_api::model::{ModelSchema, TagSchema, ModelId};
     use rmcs_api_server::utility::{import_public_key, encrypt_message};
     use rmcs_api_server::utility::config::{ROOT_NAME, ROOT_DATA};
     use rmcs_api_server::utility::interceptor::TokenInterceptor;
@@ -217,12 +217,19 @@ mod tests {
             ModelServiceClient::with_interceptor(channel.clone(), interceptor_admin.clone());
 
         // try to create model using user service and admin service, user should failed and admin should success
+        let tag = TagSchema {
+            model_id: Uuid::new_v4().as_bytes().to_vec(),
+            tag: 0,
+            name: String::from("default_tag"),
+            members: vec![]
+        };
         let schema = ModelSchema {
             id: Uuid::new_v4().as_bytes().to_vec(),
             category: String::from("UPLINK"),
             name: String::from("name"),
             description: String::new(),
             data_type: vec![2, 6],
+            tags: vec![tag],
             configs: Vec::new()
         };
         let request = Request::new(schema.clone());

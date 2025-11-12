@@ -43,13 +43,32 @@ impl DataService for DataServer {
         let result = self.resource_db.read_data(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
             Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(DataReadResponse { result }))
+    }
+
+    async fn list_data_by_time(&self, request: Request<DataId>)
+        -> Result<Response<DataListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_data_by_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(DataListResponse { results }))
     }
 
     async fn list_data_by_last_time(&self, request: Request<DataTime>)
@@ -61,6 +80,7 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -78,7 +98,8 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -96,7 +117,8 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number as usize
+            request.number as usize,
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -114,7 +136,8 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number as usize
+            request.number as usize,
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -131,7 +154,8 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_by_ids_time(
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -149,6 +173,7 @@ impl DataService for DataServer {
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -166,7 +191,8 @@ impl DataService for DataServer {
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -184,7 +210,8 @@ impl DataService for DataServer {
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number as usize
+            request.number as usize,
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -202,7 +229,8 @@ impl DataService for DataServer {
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number as usize
+            request.number as usize,
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -310,6 +338,22 @@ impl DataService for DataServer {
         Ok(Response::new(DataSetReadResponse { result }))
     }
 
+    async fn list_data_set_by_time(&self, request: Request<DataSetId>)
+        -> Result<Response<DataSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_DATA)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_data_set_by_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(DataSetListResponse { results }))
+    }
+
     async fn list_data_set_by_last_time(&self, request: Request<DataSetTime>)
         -> Result<Response<DataSetListResponse>, Status>
     {
@@ -389,7 +433,8 @@ impl DataService for DataServer {
             ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
-            ).to_vec()
+            ).to_vec(),
+            Some(request.tag as i16)
         ).await;
         match result {
             Ok(_) => (),
@@ -403,20 +448,22 @@ impl DataService for DataServer {
     {
         self.validate(request.extensions(), CREATE_DATA)?;
         let request = request.into_inner();
-        let (device_ids, model_ids, timestamps, data_multiple) = request.schemas.into_iter().map(|r| {(
+        let (device_ids, model_ids, timestamps, data_multiple, tags) = request.schemas.into_iter().map(|r| {(
             Uuid::from_slice(&r.device_id).unwrap_or_default(),
             Uuid::from_slice(&r.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(&r.timestamp * 1000),
             ArrayDataValue::from_bytes(
                 &r.data_bytes,
                 &r.data_type.iter().map(|&e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
-            ).to_vec()
+            ).to_vec(),
+            r.tag as i16
         )}).collect();
         let result = self.resource_db.create_data_multiple(
             device_ids,
             model_ids,
             timestamps,
-            data_multiple
+            data_multiple,
+            Some(tags)
         ).await;
         match result {
             Ok(_) => (),
@@ -434,6 +481,7 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         match result {
             Ok(_) => (),
@@ -450,7 +498,8 @@ impl DataService for DataServer {
         let result = self.resource_db.read_data_timestamp(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let timestamp = match result {
             Ok(value) => value.timestamp_micros(),
@@ -468,6 +517,7 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
@@ -485,7 +535,8 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
@@ -502,7 +553,8 @@ impl DataService for DataServer {
         let result = self.resource_db.read_data_timestamp_by_ids(
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let timestamp = match result {
             Ok(value) => value.timestamp_micros(),
@@ -520,6 +572,7 @@ impl DataService for DataServer {
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
@@ -537,7 +590,8 @@ impl DataService for DataServer {
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
             Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
@@ -602,7 +656,8 @@ impl DataService for DataServer {
         let request = request.into_inner();
         let result = self.resource_db.count_data(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            Uuid::from_slice(&request.model_id).unwrap_or_default()
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
             Ok(value) => value as u32,
@@ -619,7 +674,8 @@ impl DataService for DataServer {
         let result = self.resource_db.count_data_by_last_time(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
             Ok(value) => value as u32,
@@ -637,7 +693,8 @@ impl DataService for DataServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
             Ok(value) => value as u32,
@@ -654,6 +711,7 @@ impl DataService for DataServer {
         let result = self.resource_db.count_data_by_ids(
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
             Ok(value) => value as u32,
@@ -670,7 +728,8 @@ impl DataService for DataServer {
         let result = self.resource_db.count_data_by_ids_last_time(
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
             Ok(value) => value as u32,
@@ -688,7 +747,8 @@ impl DataService for DataServer {
             request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
             Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
             Ok(value) => value as u32,

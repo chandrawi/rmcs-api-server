@@ -1,11 +1,11 @@
 use tonic::{Request, Response, Status};
 use chrono::{Utc, TimeZone};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, DataType, DataValue, LogStatus};
+use rmcs_resource_db::{Resource, DataType, DataValue};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::log::{
     LogSchema, LogId, LogTime, LogRange, LogUpdate,
-    LogReadResponse, LogListResponse, LogChangeResponse
+    LogReadResponse, LogListResponse, LogCreateResponse, LogChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -39,8 +39,25 @@ impl LogService for LogServer {
         self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.read_log(
+            request.id
+        ).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogReadResponse { result }))
+    }
+
+    async fn read_log_by_time(&self, request: Request<LogTime>)
+        -> Result<Response<LogReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_log_by_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
-            Uuid::from_slice(&request.device_id).unwrap_or_default()
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
         ).await;
         let result = match result {
             Ok(value) => Some(value.into()),
@@ -57,7 +74,8 @@ impl LogService for LogServer {
         let result = self.resource_db.list_log_by_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::from(s as i16))
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -74,7 +92,8 @@ impl LogService for LogServer {
         let result = self.resource_db.list_log_by_last_time(
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::from(s as i16))
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -92,7 +111,8 @@ impl LogService for LogServer {
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.status.map(|s| LogStatus::from(s as i16))
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
@@ -102,24 +122,25 @@ impl LogService for LogServer {
     }
 
     async fn create_log(&self, request: Request<LogSchema>)
-        -> Result<Response<LogChangeResponse>, Status>
+        -> Result<Response<LogCreateResponse>, Status>
     {
         self.validate(request.extensions(), CREATE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.create_log(
             Utc.timestamp_nanos(request.timestamp * 1000),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            LogStatus::from(request.status as i16),
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag as i16,
             DataValue::from_bytes(
                 &request.log_bytes, 
                 DataType::from(request.log_type)
             )
         ).await;
-        match result {
-            Ok(_) => (),
+        let id = match result {
+            Ok(value) => value,
             Err(e) => return Err(handle_error(e))
         };
-        Ok(Response::new(LogChangeResponse { }))
+        Ok(Response::new(LogCreateResponse { id }))
     }
 
     async fn update_log(&self, request: Request<LogUpdate>)
@@ -128,9 +149,8 @@ impl LogService for LogServer {
         self.validate(request.extensions(), UPDATE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.update_log(
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            Uuid::from_slice(&request.device_id).unwrap_or_default(),
-            request.status.map(|s| LogStatus::from(s as i16)),
+            request.id,
+            request.tag.map(|t| t as i16),
             request.log_bytes.map(|s| {
                 DataValue::from_bytes(
                     &s, 
@@ -151,8 +171,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), DELETE_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_log(
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            Uuid::from_slice(&request.device_id).unwrap_or_default()
+            request.id
         ).await;
         match result {
             Ok(_) => (),
