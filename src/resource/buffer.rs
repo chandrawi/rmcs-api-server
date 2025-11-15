@@ -4,7 +4,8 @@ use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::buffer::{
-    BufferSchema, BufferMultipleSchema, BufferId, BufferTime, BufferRange, BufferNumber, BufferSelector, BuffersSelector, BufferUpdate,
+    BufferSchema, BufferMultipleSchema, BufferId, BufferIds, BufferTime, BufferRange, BufferNumber, 
+    BufferSelector, BuffersSelector, BufferUpdate, BufferUpdateTime,
     BufferIdsTime, BufferIdsRange, BufferIdsNumber, BufferIdsSelector, BuffersIdsSelector,
     BufferSetTime, BufferSetRange, BufferSetNumber, BufferSetSelector, BuffersSetSelector,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferCreateMultipleResponse, BufferChangeResponse, BufferCountResponse,
@@ -65,6 +66,19 @@ impl BufferService for BufferServer {
             Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(BufferReadResponse { result }))
+    }
+
+    async fn list_buffer(&self, request: Request<BufferIds>)
+        -> Result<Response<BufferListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer(request.ids).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferListResponse { results }))
     }
 
     async fn list_buffer_by_time(&self, request: Request<BufferTime>)
@@ -657,12 +671,54 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferChangeResponse { }))
     }
 
+    async fn update_buffer_by_time(&self, request: Request<BufferUpdateTime>)
+        -> Result<Response<BufferChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), UPDATE_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.update_buffer_by_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.data_bytes.map(|s| {
+                ArrayDataValue::from_bytes(
+                    &s,
+                    request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
+                ).to_vec()
+            }),
+            request.tag.map(|t| t as i16)
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferChangeResponse { }))
+    }
+
     async fn delete_buffer(&self, request: Request<BufferId>)
         -> Result<Response<BufferChangeResponse>, Status>
     {
         self.validate(request.extensions(), DELETE_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.delete_buffer(request.id).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferChangeResponse { }))
+    }
+
+    async fn delete_buffer_by_time(&self, request: Request<BufferTime>)
+        -> Result<Response<BufferChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), DELETE_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.delete_buffer_by_time(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
         match result {
             Ok(_) => (),
             Err(e) => return Err(handle_error(e))

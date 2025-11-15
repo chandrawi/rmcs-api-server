@@ -53,7 +53,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataReadResponse { result }))
     }
 
-    async fn list_data_by_time(&self, request: Request<DataId>)
+    async fn list_data_by_time(&self, request: Request<DataTime>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -338,7 +338,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataSetReadResponse { result }))
     }
 
-    async fn list_data_set_by_time(&self, request: Request<DataSetId>)
+    async fn list_data_set_by_time(&self, request: Request<DataSetTime>)
         -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;

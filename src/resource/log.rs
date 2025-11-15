@@ -4,7 +4,7 @@ use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, DataValue};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::log::{
-    LogSchema, LogId, LogTime, LogRange, LogUpdate,
+    LogSchema, LogId, LogIds, LogTime, LogRange, LogUpdate, LogUpdateTime,
     LogReadResponse, LogListResponse, LogCreateResponse, LogChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
@@ -64,6 +64,21 @@ impl LogService for LogServer {
             Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(LogReadResponse { result }))
+    }
+
+    async fn list_log(&self, request: Request<LogIds>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log(
+            request.ids
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
     }
 
     async fn list_log_by_time(&self, request: Request<LogTime>)
@@ -130,11 +145,11 @@ impl LogService for LogServer {
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.tag as i16,
             DataValue::from_bytes(
                 &request.log_bytes, 
                 DataType::from(request.log_type)
-            )
+            ),
+            Some(request.tag as i16)
         ).await;
         let id = match result {
             Ok(value) => value,
@@ -150,13 +165,37 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.update_log(
             request.id,
-            request.tag.map(|t| t as i16),
             request.log_bytes.map(|s| {
                 DataValue::from_bytes(
                     &s, 
                     DataType::from(request.log_type.unwrap_or_default())
                 )
-            })
+            }),
+            request.tag.map(|t| t as i16)
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogChangeResponse { }))
+    }
+
+    async fn update_log_by_time(&self, request: Request<LogUpdateTime>)
+    -> Result<Response<LogChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), UPDATE_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.update_log_by_time(
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.log_bytes.map(|s| {
+                DataValue::from_bytes(
+                    &s, 
+                    DataType::from(request.log_type.unwrap_or_default())
+                )
+            }),
+            request.tag.map(|t| t as i16)
         ).await;
         match result {
             Ok(_) => (),
@@ -172,6 +211,24 @@ impl LogService for LogServer {
         let request = request.into_inner();
         let result = self.resource_db.delete_log(
             request.id
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogChangeResponse { }))
+    }
+
+    async fn delete_log_by_time(&self, request: Request<LogTime>)
+        -> Result<Response<LogChangeResponse>, Status>
+    {
+        self.validate(request.extensions(), DELETE_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.delete_log_by_time(
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
         ).await;
         match result {
             Ok(_) => (),
