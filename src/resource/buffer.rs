@@ -7,9 +7,9 @@ use rmcs_resource_api::buffer::{
     BufferSchema, BufferMultipleSchema, BufferId, BufferIds, BufferTime, BufferRange, BufferNumber, 
     BufferSelector, BuffersSelector, BufferUpdate, BufferUpdateTime,
     BufferIdsTime, BufferIdsRange, BufferIdsNumber, BufferIdsSelector, BuffersIdsSelector,
-    BufferSetTime, BufferSetRange, BufferSetNumber, BufferSetSelector, BuffersSetSelector,
-    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferCreateMultipleResponse, BufferChangeResponse, BufferCountResponse,
-    TimestampReadResponse, TimestampListResponse
+    BufferSetId, BufferSetTime, BufferSetRange,
+    BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferCreateMultipleResponse, BufferChangeResponse,
+    BufferSetReadResponse, BufferSetListResponse, TimestampReadResponse, TimestampListResponse, BufferCountResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
 use super::{
@@ -449,153 +449,73 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_set_time(&self, request: Request<BufferSetTime>)
-        -> Result<Response<BufferListResponse>, Status>
+    async fn read_buffer_set(&self, request: Request<BufferSetId>)
+        -> Result<Response<BufferSetReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_set_time(
+        let result = self.resource_db.read_buffer_set(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferSetReadResponse { result }))
+    }
+
+    async fn list_buffer_set_by_time(&self, request: Request<BufferSetTime>)
+        -> Result<Response<BufferSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_set_by_time(
+            Uuid::from_slice(&request.set_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(e) => return Err(handle_error(e))
         };
-        Ok(Response::new(BufferListResponse { results }))
+        Ok(Response::new(BufferSetListResponse { results }))
     }
 
-    async fn list_buffer_by_set_last_time(&self, request: Request<BufferSetTime>)
-        -> Result<Response<BufferListResponse>, Status>
+    async fn list_buffer_set_by_last_time(&self, request: Request<BufferSetTime>)
+        -> Result<Response<BufferSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_set_last_time(
+        let result = self.resource_db.list_buffer_set_by_last_time(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000)
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(e) => return Err(handle_error(e))
         };
-        Ok(Response::new(BufferListResponse { results }))
+        Ok(Response::new(BufferSetListResponse { results }))
     }
 
-    async fn list_buffer_by_set_range_time(&self, request: Request<BufferSetRange>)
-        -> Result<Response<BufferListResponse>, Status>
+    async fn list_buffer_set_by_range_time(&self, request: Request<BufferSetRange>)
+        -> Result<Response<BufferSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_set_range_time(
+        let result = self.resource_db.list_buffer_set_by_range_time(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
-            Utc.timestamp_nanos(request.end * 1000)
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(e) => return Err(handle_error(e))
         };
-        Ok(Response::new(BufferListResponse { results }))
-    }
-
-    async fn list_buffer_by_set_number_before(&self, request: Request<BufferSetNumber>)
-        -> Result<Response<BufferListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_set_number_before(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number as usize
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(BufferListResponse { results }))
-    }
-
-    async fn list_buffer_by_set_number_after(&self, request: Request<BufferSetNumber>)
-        -> Result<Response<BufferListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_set_number_after(
-            Uuid::from_slice(&request.set_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
-            request.number as usize
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(BufferListResponse { results }))
-    }
-
-    async fn list_buffer_first_by_set(&self, request: Request<BuffersSetSelector>)
-        -> Result<Response<BufferListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_first_by_set(
-            request.number as usize,
-            Uuid::from_slice(&request.set_id).unwrap_or_default()
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(BufferListResponse { results }))
-    }
-
-    async fn list_buffer_first_offset_by_set(&self, request: Request<BuffersSetSelector>)
-        -> Result<Response<BufferListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_first_offset_by_set(
-            request.number as usize,
-            request.offset as usize,
-            Uuid::from_slice(&request.set_id).unwrap_or_default()
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(BufferListResponse { results }))
-    }
-
-    async fn list_buffer_last_by_set(&self, request: Request<BuffersSetSelector>)
-        -> Result<Response<BufferListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_last_by_set(
-            request.number as usize,
-            Uuid::from_slice(&request.set_id).unwrap_or_default()
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(BufferListResponse { results }))
-    }
-
-    async fn list_buffer_last_offset_by_set(&self, request: Request<BuffersSetSelector>)
-        -> Result<Response<BufferListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_last_offset_by_set(
-            request.number as usize,
-            request.offset as usize,
-            Uuid::from_slice(&request.set_id).unwrap_or_default()
-        ).await;
-        let results = match result {
-            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(BufferListResponse { results }))
+        Ok(Response::new(BufferSetListResponse { results }))
     }
 
     async fn create_buffer(&self, request: Request<BufferSchema>)
@@ -832,38 +752,6 @@ impl BufferService for BufferServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn list_buffer_timestamp_first_by_set(&self, request: Request<BuffersSetSelector>)
-        -> Result<Response<TimestampListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_timestamp_first_by_set(
-            request.number as usize,
-            Uuid::from_slice(&request.set_id).unwrap_or_default()
-        ).await;
-        let timestamps = match result {
-            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(TimestampListResponse { timestamps }))
-    }
-
-    async fn list_buffer_timestamp_last_by_set(&self, request: Request<BuffersSetSelector>)
-        -> Result<Response<TimestampListResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.list_buffer_timestamp_last_by_set(
-            request.number as usize,
-            Uuid::from_slice(&request.set_id).unwrap_or_default()
-        ).await;
-        let timestamps = match result {
-            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(TimestampListResponse { timestamps }))
-    }
-
     async fn count_buffer(&self, request: Request<BufferSelector>)
         -> Result<Response<BufferCountResponse>, Status>
     {
@@ -890,21 +778,6 @@ impl BufferService for BufferServer {
             Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
             Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
             request.tag.map(|t| t as i16)
-        ).await;
-        let count = match result {
-            Ok(value) => value as u32,
-            Err(e) => return Err(handle_error(e))
-        };
-        Ok(Response::new(BufferCountResponse { count }))
-    }
-
-    async fn count_buffer_by_set(&self, request: Request<BufferSetSelector>)
-        -> Result<Response<BufferCountResponse>, Status>
-    {
-        self.validate(request.extensions(), READ_BUFFER)?;
-        let request = request.into_inner();
-        let result = self.resource_db.count_buffer_by_set(
-            Uuid::from_slice(&request.set_id).unwrap_or_default()
         ).await;
         let count = match result {
             Ok(value) => value as u32,
