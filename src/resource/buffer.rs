@@ -1,7 +1,7 @@
 use tonic::{Request, Response, Status};
-use chrono::{Utc, TimeZone};
+use chrono::{DateTime, Utc, TimeZone};
 use uuid::Uuid;
-use rmcs_resource_db::{Resource, DataType, ArrayDataValue};
+use rmcs_resource_db::{Resource, DataType, DataValue, ArrayDataValue};
 use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::buffer::{
     BufferSchema, BufferMultipleSchema, BufferId, BufferIds, BufferTime, BufferRange, BufferNumber, 
@@ -73,7 +73,7 @@ impl BufferService for BufferServer {
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer(request.ids).await;
+        let result = self.resource_db.list_buffer(&request.ids).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(e) => return Err(handle_error(e))
@@ -288,8 +288,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_by_ids_time(
-            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.tag.map(|t| t as i16)
         ).await;
@@ -306,8 +306,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_by_ids_last_time(
-            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.tag.map(|t| t as i16)
         ).await;
@@ -324,8 +324,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_by_ids_range_time(
-            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000),
             request.tag.map(|t| t as i16)
@@ -343,8 +343,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_by_ids_number_before(
-            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.number as usize,
             request.tag.map(|t| t as i16)
@@ -362,8 +362,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_by_ids_number_after(
-            request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
-            request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect(),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.number as usize,
             request.tag.map(|t| t as i16)
@@ -382,8 +382,8 @@ impl BufferService for BufferServer {
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_first_by_ids(
             request.number as usize,
-            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
-            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
@@ -401,8 +401,8 @@ impl BufferService for BufferServer {
         let result = self.resource_db.list_buffer_first_offset_by_ids(
             request.number as usize,
             request.offset as usize,
-            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
-            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
@@ -419,8 +419,8 @@ impl BufferService for BufferServer {
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_last_by_ids(
             request.number as usize,
-            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
-            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
@@ -438,8 +438,8 @@ impl BufferService for BufferServer {
         let result = self.resource_db.list_buffer_last_offset_by_ids(
             request.number as usize,
             request.offset as usize,
-            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
-            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
@@ -527,7 +527,7 @@ impl BufferService for BufferServer {
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
-            ArrayDataValue::from_bytes(
+            &ArrayDataValue::from_bytes(
                 &request.data_bytes,
                 request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
             ).to_vec(),
@@ -545,22 +545,24 @@ impl BufferService for BufferServer {
     {
         self.validate(request.extensions(), CREATE_BUFFER)?;
         let request = request.into_inner();
-        let (device_ids, model_ids, timestamps, data_multiple, tags) = request.schemas.into_iter().map(|r| {(
-            Uuid::from_slice(&r.device_id).unwrap_or_default(),
-            Uuid::from_slice(&r.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(&r.timestamp * 1000),
-            ArrayDataValue::from_bytes(
-                &r.data_bytes,
-                &r.data_type.iter().map(|&e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
-            ).to_vec(),
-            r.tag as i16
-        )}).collect();
+        let (device_ids, model_ids, timestamps, data_vec, tags): (Vec<Uuid>, Vec<Uuid>, Vec<DateTime<Utc>>, Vec<Vec<DataValue>>, Vec<i16>) 
+            = request.schemas.into_iter().map(|r| {(
+                Uuid::from_slice(&r.device_id).unwrap_or_default(),
+                Uuid::from_slice(&r.model_id).unwrap_or_default(),
+                Utc.timestamp_nanos(&r.timestamp * 1000),
+                ArrayDataValue::from_bytes(
+                    &r.data_bytes,
+                    &r.data_type.iter().map(|&e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
+                ).to_vec(),
+                r.tag as i16
+            )}).collect();
+        let data_multiple: Vec<&[DataValue]> = data_vec.iter().map(|d| d.as_slice()).collect();
         let result = self.resource_db.create_buffer_multiple(
-            device_ids,
-            model_ids,
-            timestamps,
-            data_multiple,
-            Some(tags)
+            &device_ids,
+            &model_ids,
+            &timestamps,
+            &data_multiple,
+            Some(&tags)
         ).await;
         let ids = match result {
             Ok(value) => value,
@@ -581,7 +583,7 @@ impl BufferService for BufferServer {
                     &s,
                     request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
                 ).to_vec()
-            }),
+            }).as_deref(),
             request.tag.map(|t| t as i16)
         ).await;
         match result {
@@ -605,7 +607,7 @@ impl BufferService for BufferServer {
                     &s,
                     request.data_type.into_iter().map(|e| DataType::from(e)).collect::<Vec<DataType>>().as_slice()
                 ).to_vec()
-            }),
+            }).as_deref(),
             request.tag.map(|t| t as i16)
         ).await;
         match result {
@@ -723,8 +725,8 @@ impl BufferService for BufferServer {
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_timestamp_first_by_ids(
             request.number as usize,
-            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
-            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
@@ -741,8 +743,8 @@ impl BufferService for BufferServer {
         let request = request.into_inner();
         let result = self.resource_db.list_buffer_timestamp_last_by_ids(
             request.number as usize,
-            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
-            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
@@ -775,8 +777,8 @@ impl BufferService for BufferServer {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.count_buffer_by_ids(
-            Some(request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
-            Some(request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect()),
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let count = match result {

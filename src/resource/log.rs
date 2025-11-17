@@ -72,7 +72,7 @@ impl LogService for LogServer {
         self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log(
-            request.ids
+            &request.ids
         ).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),

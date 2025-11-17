@@ -302,7 +302,7 @@ impl ModelService for ModelServer {
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             request.tag as i16,
             &request.name,
-            request.members.into_iter().map(|t| t as i16).collect()
+            &request.members.into_iter().map(|t| t as i16).collect::<Vec<i16>>()
         ).await;
         match result {
             Ok(_) => (),
@@ -317,7 +317,7 @@ impl ModelService for ModelServer {
         self.validate(request.extensions(), UPDATE_MODEL_CONFIG)?;
         let request = request.into_inner();
         let members = if request.members_flag {
-            Some(request.members.into_iter().map(|t| t as i16).collect())
+            Some(request.members.into_iter().map(|t| t as i16).collect::<Vec<i16>>())
         } else {
             None
         };
@@ -325,7 +325,7 @@ impl ModelService for ModelServer {
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             request.tag as i16,
             request.name.as_deref(),
-            members
+            members.as_deref()
         ).await;
         match result {
             Ok(_) => (),
