@@ -5,7 +5,7 @@ use rmcs_resource_db::{Resource, DataValue, DataType, ArrayDataValue};
 use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::data::{
     DataSchema, DataMultipleSchema, DataId, DataTime, DataRange, DataNumber, 
-    DataIds, DataIdsTime, DataIdsRange, DataIdsNumber, DataSetId, DataSetTime, DataSetRange,
+    DataGroupId, DataGroupTime, DataGroupRange, DataGroupNumber, DataSetId, DataSetTime, DataSetRange,
     DataReadResponse, DataListResponse, DataChangeResponse, DataSetReadResponse, DataSetListResponse,
     TimestampReadResponse, TimestampListResponse, DataCountResponse
 };
@@ -71,12 +71,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_last_time(&self, request: Request<DataTime>)
+    async fn list_data_by_latest(&self, request: Request<DataTime>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_by_last_time(
+        let result = self.resource_db.list_data_by_latest(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -89,12 +89,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_range_time(&self, request: Request<DataRange>)
+    async fn list_data_by_range(&self, request: Request<DataRange>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_by_range_time(
+        let result = self.resource_db.list_data_by_range(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -146,12 +146,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_ids_time(&self, request: Request<DataIdsTime>)
+    async fn list_data_group_by_time(&self, request: Request<DataGroupTime>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_by_ids_time(
+        let result = self.resource_db.list_data_group_by_time(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -164,12 +164,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_ids_last_time(&self, request: Request<DataIdsTime>)
+    async fn list_data_group_by_latest(&self, request: Request<DataGroupTime>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_by_ids_last_time(
+        let result = self.resource_db.list_data_group_by_latest(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -182,12 +182,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_ids_range_time(&self, request: Request<DataIdsRange>)
+    async fn list_data_group_by_range(&self, request: Request<DataGroupRange>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_by_ids_range_time(
+        let result = self.resource_db.list_data_group_by_range(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -201,12 +201,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_ids_number_before(&self, request: Request<DataIdsNumber>)
+    async fn list_data_group_by_number_before(&self, request: Request<DataGroupNumber>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_by_ids_number_before(
+        let result = self.resource_db.list_data_group_by_number_before(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -220,12 +220,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_ids_number_after(&self, request: Request<DataIdsNumber>)
+    async fn list_data_group_by_number_after(&self, request: Request<DataGroupNumber>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_by_ids_number_after(
+        let result = self.resource_db.list_data_group_by_number_after(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -273,12 +273,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataSetListResponse { results }))
     }
 
-    async fn list_data_set_by_last_time(&self, request: Request<DataSetTime>)
+    async fn list_data_set_by_latest(&self, request: Request<DataSetTime>)
         -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_set_by_last_time(
+        let result = self.resource_db.list_data_set_by_latest(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.tag.map(|t| t as i16)
@@ -290,12 +290,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataSetListResponse { results }))
     }
 
-    async fn list_data_set_by_range_time(&self, request: Request<DataSetRange>)
+    async fn list_data_set_by_range(&self, request: Request<DataSetRange>)
         -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_set_by_range_time(
+        let result = self.resource_db.list_data_set_by_range(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000),
@@ -397,12 +397,12 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
 
-    async fn list_data_timestamp_by_last_time(&self, request: Request<DataTime>)
+    async fn list_data_timestamp_by_latest(&self, request: Request<DataTime>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_timestamp_by_last_time(
+        let result = self.resource_db.list_data_timestamp_by_latest(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -415,12 +415,12 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn list_data_timestamp_by_range_time(&self, request: Request<DataRange>)
+    async fn list_data_timestamp_by_range(&self, request: Request<DataRange>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_timestamp_by_range_time(
+        let result = self.resource_db.list_data_timestamp_by_range(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -434,12 +434,12 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn read_data_timestamp_by_ids(&self, request: Request<DataIds>)
+    async fn read_data_group_timestamp(&self, request: Request<DataGroupId>)
         -> Result<Response<TimestampReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_data_timestamp_by_ids(
+        let result = self.resource_db.read_data_group_timestamp(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -452,12 +452,12 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
 
-    async fn list_data_timestamp_by_ids_last_time(&self, request: Request<DataIdsTime>)
+    async fn list_data_group_timestamp_by_latest(&self, request: Request<DataGroupTime>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_timestamp_by_ids_last_time(
+        let result = self.resource_db.list_data_group_timestamp_by_latest(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -470,12 +470,12 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn list_data_timestamp_by_ids_range_time(&self, request: Request<DataIdsRange>)
+    async fn list_data_group_timestamp_by_range(&self, request: Request<DataGroupRange>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_data_timestamp_by_ids_range_time(
+        let result = self.resource_db.list_data_group_timestamp_by_range(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -506,12 +506,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_last_time(&self, request: Request<DataTime>)
+    async fn count_data_by_latest(&self, request: Request<DataTime>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.count_data_by_last_time(
+        let result = self.resource_db.count_data_by_latest(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -524,12 +524,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_range_time(&self, request: Request<DataRange>)
+    async fn count_data_by_range(&self, request: Request<DataRange>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.count_data_by_range_time(
+        let result = self.resource_db.count_data_by_range(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -543,12 +543,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_ids(&self, request: Request<DataIdsTime>)
+    async fn count_data_group(&self, request: Request<DataGroupTime>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.count_data_by_ids(
+        let result = self.resource_db.count_data_group(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             request.tag.map(|t| t as i16)
@@ -560,12 +560,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_ids_last_time(&self, request: Request<DataIdsTime>)
+    async fn count_data_group_by_latest(&self, request: Request<DataGroupTime>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.count_data_by_ids_last_time(
+        let result = self.resource_db.count_data_group_by_latest(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -578,12 +578,12 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_ids_range_time(&self, request: Request<DataIdsRange>)
+    async fn count_data_group_by_range(&self, request: Request<DataGroupRange>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
-        let result = self.resource_db.count_data_by_ids_range_time(
+        let result = self.resource_db.count_data_group_by_range(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.begin * 1000),

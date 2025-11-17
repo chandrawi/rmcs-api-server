@@ -65,12 +65,12 @@ impl SliceService for SliceServer {
         Ok(Response::new(SliceListResponse { results }))
     }
 
-    async fn list_slice_by_range_time(&self, request: Request<SliceRange>)
+    async fn list_slice_by_range(&self, request: Request<SliceRange>)
         -> Result<Response<SliceListResponse>, Status>
     {
         self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_range_time(
+        let result = self.resource_db.list_slice_by_range(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -99,12 +99,12 @@ impl SliceService for SliceServer {
         Ok(Response::new(SliceListResponse { results }))
     }
 
-    async fn list_slice_by_name_range_time(&self, request: Request<SliceNameRange>)
+    async fn list_slice_by_name_range(&self, request: Request<SliceNameRange>)
         -> Result<Response<SliceListResponse>, Status>
     {
         self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_slice_by_name_range_time(
+        let result = self.resource_db.list_slice_by_name_range(
             &request.name,
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000)
@@ -216,12 +216,12 @@ impl SliceService for SliceServer {
         Ok(Response::new(SliceSetListResponse { results }))
     }
 
-    async fn list_slice_set_by_range_time(&self, request: Request<SliceSetRange>)
+    async fn list_slice_set_by_range(&self, request: Request<SliceSetRange>)
         -> Result<Response<SliceSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_slice_set_by_range_time(
+        let result = self.resource_db.list_slice_set_by_range(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000)
@@ -249,12 +249,12 @@ impl SliceService for SliceServer {
         Ok(Response::new(SliceSetListResponse { results }))
     }
 
-    async fn list_slice_set_by_name_range_time(&self, request: Request<SliceNameRange>)
+    async fn list_slice_set_by_name_range(&self, request: Request<SliceNameRange>)
         -> Result<Response<SliceSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_SLICE)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_slice_set_by_name_range_time(
+        let result = self.resource_db.list_slice_set_by_name_range(
             &request.name,
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000)

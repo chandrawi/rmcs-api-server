@@ -6,7 +6,7 @@ use rmcs_resource_api::buffer::buffer_service_server::BufferService;
 use rmcs_resource_api::buffer::{
     BufferSchema, BufferMultipleSchema, BufferId, BufferIds, BufferTime, BufferRange, BufferNumber, 
     BufferSelector, BuffersSelector, BufferUpdate, BufferUpdateTime,
-    BufferIdsTime, BufferIdsRange, BufferIdsNumber, BufferIdsSelector, BuffersIdsSelector,
+    BufferGroupTime, BufferGroupRange, BufferGroupNumber, BufferGroupSelector, BuffersGroupSelector,
     BufferSetId, BufferSetTime, BufferSetRange,
     BufferReadResponse, BufferListResponse, BufferCreateResponse, BufferCreateMultipleResponse, BufferChangeResponse,
     BufferSetReadResponse, BufferSetListResponse, TimestampReadResponse, TimestampListResponse, BufferCountResponse
@@ -68,12 +68,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferReadResponse { result }))
     }
 
-    async fn list_buffer(&self, request: Request<BufferIds>)
+    async fn list_buffer_by_ids(&self, request: Request<BufferIds>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer(&request.ids).await;
+        let result = self.resource_db.list_buffer_by_ids(&request.ids).await;
         let results = match result {
             Ok(value) => value.into_iter().map(|e| e.into()).collect(),
             Err(e) => return Err(handle_error(e))
@@ -99,12 +99,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_last_time(&self, request: Request<BufferTime>)
+    async fn list_buffer_by_latest(&self, request: Request<BufferTime>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_last_time(
+        let result = self.resource_db.list_buffer_by_latest(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -117,12 +117,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_range_time(&self, request: Request<BufferRange>)
+    async fn list_buffer_by_range(&self, request: Request<BufferRange>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_range_time(
+        let result = self.resource_db.list_buffer_by_range(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -282,12 +282,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_ids_time(&self, request: Request<BufferIdsTime>)
+    async fn list_buffer_group_by_time(&self, request: Request<BufferGroupTime>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_ids_time(
+        let result = self.resource_db.list_buffer_group_by_time(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -300,12 +300,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_ids_last_time(&self, request: Request<BufferIdsTime>)
+    async fn list_buffer_group_by_latest(&self, request: Request<BufferGroupTime>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_ids_last_time(
+        let result = self.resource_db.list_buffer_group_by_latest(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -318,12 +318,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_ids_range_time(&self, request: Request<BufferIdsRange>)
+    async fn list_buffer_group_by_range(&self, request: Request<BufferGroupRange>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_ids_range_time(
+        let result = self.resource_db.list_buffer_group_by_range(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.begin * 1000),
@@ -337,12 +337,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_ids_number_before(&self, request: Request<BufferIdsNumber>)
+    async fn list_buffer_group_by_number_before(&self, request: Request<BufferGroupNumber>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_ids_number_before(
+        let result = self.resource_db.list_buffer_group_by_number_before(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -356,12 +356,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_by_ids_number_after(&self, request: Request<BufferIdsNumber>)
+    async fn list_buffer_group_by_number_after(&self, request: Request<BufferGroupNumber>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_by_ids_number_after(
+        let result = self.resource_db.list_buffer_group_by_number_after(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             Utc.timestamp_nanos(request.timestamp * 1000),
@@ -375,12 +375,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_first_by_ids(&self, request: Request<BuffersIdsSelector>)
+    async fn list_buffer_group_first(&self, request: Request<BuffersGroupSelector>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_first_by_ids(
+        let result = self.resource_db.list_buffer_group_first(
             request.number as usize,
             Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
@@ -393,12 +393,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_first_offset_by_ids(&self, request: Request<BuffersIdsSelector>)
+    async fn list_buffer_group_first_offset(&self, request: Request<BuffersGroupSelector>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_first_offset_by_ids(
+        let result = self.resource_db.list_buffer_group_first_offset(
             request.number as usize,
             request.offset as usize,
             Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
@@ -412,12 +412,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_last_by_ids(&self, request: Request<BuffersIdsSelector>)
+    async fn list_buffer_group_last(&self, request: Request<BuffersGroupSelector>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_last_by_ids(
+        let result = self.resource_db.list_buffer_group_last(
             request.number as usize,
             Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
@@ -430,12 +430,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferListResponse { results }))
     }
 
-    async fn list_buffer_last_offset_by_ids(&self, request: Request<BuffersIdsSelector>)
+    async fn list_buffer_group_last_offset(&self, request: Request<BuffersGroupSelector>)
         -> Result<Response<BufferListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_last_offset_by_ids(
+        let result = self.resource_db.list_buffer_group_last_offset(
             request.number as usize,
             request.offset as usize,
             Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
@@ -483,12 +483,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferSetListResponse { results }))
     }
 
-    async fn list_buffer_set_by_last_time(&self, request: Request<BufferSetTime>)
+    async fn list_buffer_set_by_latest(&self, request: Request<BufferSetTime>)
         -> Result<Response<BufferSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_set_by_last_time(
+        let result = self.resource_db.list_buffer_set_by_latest(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.tag.map(|t| t as i16)
@@ -500,12 +500,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferSetListResponse { results }))
     }
 
-    async fn list_buffer_set_by_range_time(&self, request: Request<BufferSetRange>)
+    async fn list_buffer_set_by_range(&self, request: Request<BufferSetRange>)
         -> Result<Response<BufferSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_set_by_range_time(
+        let result = self.resource_db.list_buffer_set_by_range(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000),
@@ -718,12 +718,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn list_buffer_timestamp_first_by_ids(&self, request: Request<BuffersIdsSelector>)
+    async fn list_buffer_group_timestamp_first(&self, request: Request<BuffersGroupSelector>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_timestamp_first_by_ids(
+        let result = self.resource_db.list_buffer_group_timestamp_first(
             request.number as usize,
             Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
@@ -736,12 +736,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn list_buffer_timestamp_last_by_ids(&self, request: Request<BuffersIdsSelector>)
+    async fn list_buffer_group_timestamp_last(&self, request: Request<BuffersGroupSelector>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_buffer_timestamp_last_by_ids(
+        let result = self.resource_db.list_buffer_group_timestamp_last(
             request.number as usize,
             Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
@@ -771,12 +771,12 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferCountResponse { count }))
     }
 
-    async fn count_buffer_by_ids(&self, request: Request<BufferIdsSelector>)
+    async fn count_buffer_group(&self, request: Request<BufferGroupSelector>)
         -> Result<Response<BufferCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.count_buffer_by_ids(
+        let result = self.resource_db.count_buffer_group(
             Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)

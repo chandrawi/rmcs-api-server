@@ -66,12 +66,12 @@ impl LogService for LogServer {
         Ok(Response::new(LogReadResponse { result }))
     }
 
-    async fn list_log(&self, request: Request<LogIds>)
+    async fn list_log_by_ids(&self, request: Request<LogIds>)
         -> Result<Response<LogListResponse>, Status>
     {
         self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_log(
+        let result = self.resource_db.list_log_by_ids(
             &request.ids
         ).await;
         let results = match result {
@@ -99,12 +99,12 @@ impl LogService for LogServer {
         Ok(Response::new(LogListResponse { results }))
     }
 
-    async fn list_log_by_last_time(&self, request: Request<LogTime>)
+    async fn list_log_by_latest(&self, request: Request<LogTime>)
         -> Result<Response<LogListResponse>, Status>
     {
         self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_log_by_last_time(
+        let result = self.resource_db.list_log_by_latest(
             Utc.timestamp_nanos(request.timestamp * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
@@ -117,12 +117,12 @@ impl LogService for LogServer {
         Ok(Response::new(LogListResponse { results }))
     }
 
-    async fn list_log_by_range_time(&self, request: Request<LogRange>)
+    async fn list_log_by_range(&self, request: Request<LogRange>)
         -> Result<Response<LogListResponse>, Status>
     {
         self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
-        let result = self.resource_db.list_log_by_range_time(
+        let result = self.resource_db.list_log_by_range(
             Utc.timestamp_nanos(request.begin * 1000),
             Utc.timestamp_nanos(request.end * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
