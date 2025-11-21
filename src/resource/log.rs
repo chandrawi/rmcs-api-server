@@ -4,7 +4,9 @@ use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, DataValue};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::log::{
-    LogSchema, LogId, LogIds, LogTime, LogLatest, LogRange, LogUpdate, LogUpdateTime,
+    LogSchema, LogId, LogIds, LogTime, LogLatest, LogRange, LogSelector, LogsSelector,
+    LogGroupTime, LogGroupLatest, LogGroupRange, LogGroupSelector, LogsGroupSelector,
+    LogUpdate, LogUpdateTime,
     LogReadResponse, LogListResponse, LogCreateResponse, LogChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
@@ -127,6 +129,277 @@ impl LogService for LogServer {
             Utc.timestamp_nanos(request.end * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn read_log_first(&self, request: Request<LogSelector>)
+        -> Result<Response<LogReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_log_first(
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogReadResponse { result }))
+    }
+
+    async fn read_log_last(&self, request: Request<LogSelector>)
+        -> Result<Response<LogReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_log_last(
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogReadResponse { result }))
+    }
+
+    async fn list_log_first(&self, request: Request<LogsSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_first(
+            request.number as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_first_offset(&self, request: Request<LogsSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_first_offset(
+            request.number as usize,
+            request.offset as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_last(&self, request: Request<LogsSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_last(
+            request.number as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_last_offset(&self, request: Request<LogsSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_last_offset(
+            request.number as usize,
+            request.offset as usize,
+            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_group_by_time(&self, request: Request<LogGroupTime>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_group_by_time(
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_group_by_latest(&self, request: Request<LogGroupLatest>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_group_by_latest(
+            Utc.timestamp_nanos(request.latest * 1000),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_group_by_range(&self, request: Request<LogGroupRange>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_group_by_range(
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn read_log_group_first(&self, request: Request<LogGroupSelector>)
+        -> Result<Response<LogReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_log_group_first(
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogReadResponse { result }))
+    }
+
+    async fn read_log_group_last(&self, request: Request<LogGroupSelector>)
+        -> Result<Response<LogReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_log_group_last(
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let result = match result {
+            Ok(value) => Some(value.into()),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogReadResponse { result }))
+    }
+
+    async fn list_log_group_first(&self, request: Request<LogsGroupSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_group_first(
+            request.number as usize,
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_group_first_offset(&self, request: Request<LogsGroupSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_group_first_offset(
+            request.number as usize,
+            request.offset as usize,
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_group_last(&self, request: Request<LogsGroupSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_group_last(
+            request.number as usize,
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(LogListResponse { results }))
+    }
+
+    async fn list_log_group_last_offset(&self, request: Request<LogsGroupSelector>)
+        -> Result<Response<LogListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_LOG)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_log_group_last_offset(
+            request.number as usize,
+            request.offset as usize,
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
