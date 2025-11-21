@@ -4,7 +4,7 @@ use uuid::Uuid;
 use rmcs_resource_db::Resource;
 use rmcs_resource_api::slice::slice_service_server::SliceService;
 use rmcs_resource_api::slice::{
-    SliceSchema, SliceId, SliceTime, SliceRange, SliceNameTime, SliceNameRange, SliceUpdate, SliceOption,
+    SliceSchema, SliceId, SliceIds, SliceTime, SliceRange, SliceNameTime, SliceNameRange, SliceUpdate, SliceOption,
     SliceSetSchema, SliceSetTime, SliceSetRange, SliceSetOption,
     SliceReadResponse, SliceListResponse, SliceCreateResponse, SliceChangeResponse,
     SliceSetReadResponse, SliceSetListResponse
@@ -46,6 +46,19 @@ impl SliceService for SliceServer {
             Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceReadResponse { result }))
+    }
+
+    async fn list_slice_by_ids(&self, request: Request<SliceIds>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_by_ids(&request.ids).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(SliceListResponse { results }))
     }
 
     async fn list_slice_by_time(&self, request: Request<SliceTime>)
@@ -198,6 +211,19 @@ impl SliceService for SliceServer {
             Err(e) => return Err(handle_error(e))
         };
         Ok(Response::new(SliceSetReadResponse { result }))
+    }
+
+    async fn list_slice_set_by_ids(&self, request: Request<SliceIds>)
+        -> Result<Response<SliceSetListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_set_by_ids(&request.ids).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(SliceSetListResponse { results }))
     }
 
     async fn list_slice_set_by_time(&self, request: Request<SliceSetTime>)

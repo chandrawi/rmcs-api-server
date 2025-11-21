@@ -4,7 +4,7 @@ use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataType, DataValue};
 use rmcs_resource_api::log::log_service_server::LogService;
 use rmcs_resource_api::log::{
-    LogSchema, LogId, LogIds, LogTime, LogRange, LogUpdate, LogUpdateTime,
+    LogSchema, LogId, LogIds, LogTime, LogLatest, LogRange, LogUpdate, LogUpdateTime,
     LogReadResponse, LogListResponse, LogCreateResponse, LogChangeResponse
 };
 use crate::utility::validator::{AccessValidator, AccessSchema};
@@ -99,13 +99,13 @@ impl LogService for LogServer {
         Ok(Response::new(LogListResponse { results }))
     }
 
-    async fn list_log_by_latest(&self, request: Request<LogTime>)
+    async fn list_log_by_latest(&self, request: Request<LogLatest>)
         -> Result<Response<LogListResponse>, Status>
     {
         self.validate(request.extensions(), READ_LOG)?;
         let request = request.into_inner();
         let result = self.resource_db.list_log_by_latest(
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.tag.map(|t| t as i16)

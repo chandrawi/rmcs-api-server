@@ -4,8 +4,8 @@ use uuid::Uuid;
 use rmcs_resource_db::{Resource, DataValue, DataType, ArrayDataValue};
 use rmcs_resource_api::data::data_service_server::DataService;
 use rmcs_resource_api::data::{
-    DataSchema, DataMultipleSchema, DataId, DataTime, DataRange, DataNumber, 
-    DataGroupId, DataGroupTime, DataGroupRange, DataGroupNumber, DataSetId, DataSetTime, DataSetRange,
+    DataSchema, DataMultipleSchema, DataTime, DataLatest, DataRange, DataNumber, 
+    DataGroupTime, DataGroupLatest, DataGroupRange, DataGroupNumber, DataSetTime, DataSetLatest, DataSetRange,
     DataReadResponse, DataListResponse, DataChangeResponse, DataSetReadResponse, DataSetListResponse,
     TimestampReadResponse, TimestampListResponse, DataCountResponse
 };
@@ -35,7 +35,7 @@ impl DataServer {
 #[tonic::async_trait]
 impl DataService for DataServer {
 
-    async fn read_data(&self, request: Request<DataId>)
+    async fn read_data(&self, request: Request<DataTime>)
         -> Result<Response<DataReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -71,7 +71,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_by_latest(&self, request: Request<DataTime>)
+    async fn list_data_by_latest(&self, request: Request<DataLatest>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -79,7 +79,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_by_latest(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
@@ -164,7 +164,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn list_data_group_by_latest(&self, request: Request<DataGroupTime>)
+    async fn list_data_group_by_latest(&self, request: Request<DataGroupLatest>)
         -> Result<Response<DataListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -172,7 +172,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_group_by_latest(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
@@ -239,7 +239,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataListResponse { results }))
     }
 
-    async fn read_data_set(&self, request: Request<DataSetId>)
+    async fn read_data_set(&self, request: Request<DataSetTime>)
         -> Result<Response<DataSetReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -273,14 +273,14 @@ impl DataService for DataServer {
         Ok(Response::new(DataSetListResponse { results }))
     }
 
-    async fn list_data_set_by_latest(&self, request: Request<DataSetTime>)
+    async fn list_data_set_by_latest(&self, request: Request<DataSetLatest>)
         -> Result<Response<DataSetListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
         let request = request.into_inner();
         let result = self.resource_db.list_data_set_by_latest(
             Uuid::from_slice(&request.set_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let results = match result {
@@ -361,7 +361,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataChangeResponse { }))
     }
 
-    async fn delete_data(&self, request: Request<DataId>)
+    async fn delete_data(&self, request: Request<DataTime>)
         -> Result<Response<DataChangeResponse>, Status>
     {
         self.validate(request.extensions(), DELETE_DATA)?;
@@ -379,7 +379,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataChangeResponse { }))
     }
 
-    async fn read_data_timestamp(&self, request: Request<DataId>)
+    async fn read_data_timestamp(&self, request: Request<DataTime>)
         -> Result<Response<TimestampReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -397,7 +397,7 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
 
-    async fn list_data_timestamp_by_latest(&self, request: Request<DataTime>)
+    async fn list_data_timestamp_by_latest(&self, request: Request<DataLatest>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -405,7 +405,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_timestamp_by_latest(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
@@ -434,7 +434,7 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn read_data_group_timestamp(&self, request: Request<DataGroupId>)
+    async fn read_data_group_timestamp(&self, request: Request<DataGroupTime>)
         -> Result<Response<TimestampReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -452,7 +452,7 @@ impl DataService for DataServer {
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
 
-    async fn list_data_group_timestamp_by_latest(&self, request: Request<DataGroupTime>)
+    async fn list_data_group_timestamp_by_latest(&self, request: Request<DataGroupLatest>)
         -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -460,7 +460,7 @@ impl DataService for DataServer {
         let result = self.resource_db.list_data_group_timestamp_by_latest(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
@@ -506,7 +506,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_by_latest(&self, request: Request<DataTime>)
+    async fn count_data_by_latest(&self, request: Request<DataLatest>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -514,7 +514,7 @@ impl DataService for DataServer {
         let result = self.resource_db.count_data_by_latest(
             Uuid::from_slice(&request.device_id).unwrap_or_default(),
             Uuid::from_slice(&request.model_id).unwrap_or_default(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
@@ -560,7 +560,7 @@ impl DataService for DataServer {
         Ok(Response::new(DataCountResponse { count }))
     }
 
-    async fn count_data_group_by_latest(&self, request: Request<DataGroupTime>)
+    async fn count_data_group_by_latest(&self, request: Request<DataGroupLatest>)
         -> Result<Response<DataCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_DATA)?;
@@ -568,7 +568,7 @@ impl DataService for DataServer {
         let result = self.resource_db.count_data_group_by_latest(
             &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
             &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
-            Utc.timestamp_nanos(request.timestamp * 1000),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
