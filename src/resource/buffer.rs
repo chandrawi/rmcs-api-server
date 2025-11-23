@@ -682,14 +682,15 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferChangeResponse { }))
     }
 
-    async fn read_buffer_timestamp_first(&self, request: Request<BufferSelector>)
+    async fn read_buffer_timestamp(&self, request: Request<BufferTime>)
         -> Result<Response<TimestampReadResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_buffer_timestamp_first(
-            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+        let result = self.resource_db.read_buffer_timestamp(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let timestamp = match result {
@@ -699,21 +700,41 @@ impl BufferService for BufferServer {
         Ok(Response::new(TimestampReadResponse { timestamp }))
     }
 
-    async fn read_buffer_timestamp_last(&self, request: Request<BufferSelector>)
-        -> Result<Response<TimestampReadResponse>, Status>
+    async fn list_buffer_timestamp_by_latest(&self, request: Request<BufferLatest>)
+        -> Result<Response<TimestampListResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
-        let result = self.resource_db.read_buffer_timestamp_last(
-            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+        let result = self.resource_db.list_buffer_timestamp_by_latest(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.latest * 1000),
             request.tag.map(|t| t as i16)
         ).await;
-        let timestamp = match result {
-            Ok(value) => value.timestamp_micros(),
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
             Err(e) => return Err(handle_error(e))
         };
-        Ok(Response::new(TimestampReadResponse { timestamp }))
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_buffer_timestamp_by_range(&self, request: Request<BufferRange>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_timestamp_by_range(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
     async fn list_buffer_timestamp_first(&self, request: Request<BuffersSelector>)
@@ -743,6 +764,61 @@ impl BufferService for BufferServer {
             request.number as usize,
             request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
             request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn read_buffer_group_timestamp(&self, request: Request<BufferGroupTime>)
+        -> Result<Response<TimestampReadResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.read_buffer_group_timestamp(
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            Utc.timestamp_nanos(request.timestamp * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let timestamp = match result {
+            Ok(value) => value.timestamp_micros(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TimestampReadResponse { timestamp }))
+    }
+
+    async fn list_buffer_group_timestamp_by_latest(&self, request: Request<BufferGroupLatest>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_group_timestamp_by_latest(
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            Utc.timestamp_nanos(request.latest * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let timestamps = match result {
+            Ok(value) => value.into_iter().map(|t| t.timestamp_micros()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(TimestampListResponse { timestamps }))
+    }
+
+    async fn list_buffer_group_timestamp_by_range(&self, request: Request<BufferGroupRange>)
+        -> Result<Response<TimestampListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_buffer_group_timestamp_by_range(
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let timestamps = match result {
@@ -788,14 +864,14 @@ impl BufferService for BufferServer {
         Ok(Response::new(TimestampListResponse { timestamps }))
     }
 
-    async fn count_buffer(&self, request: Request<BufferSelector>)
+    async fn count_buffer(&self, request: Request<BufferTime>)
         -> Result<Response<BufferCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.count_buffer(
-            request.device_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
-            request.model_id.map(|x| Uuid::from_slice(&x).unwrap_or_default()),
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
             request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
@@ -805,14 +881,88 @@ impl BufferService for BufferServer {
         Ok(Response::new(BufferCountResponse { count }))
     }
 
-    async fn count_buffer_group(&self, request: Request<BufferGroupSelector>)
+    async fn count_buffer_by_latest(&self, request: Request<BufferLatest>)
+        -> Result<Response<BufferCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_buffer_by_latest(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.latest * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferCountResponse { count }))
+    }
+
+    async fn count_buffer_by_range(&self, request: Request<BufferRange>)
+        -> Result<Response<BufferCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_buffer_by_range(
+            Uuid::from_slice(&request.device_id).unwrap_or_default(),
+            Uuid::from_slice(&request.model_id).unwrap_or_default(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferCountResponse { count }))
+    }
+
+    async fn count_buffer_group(&self, request: Request<BufferGroupTime>)
         -> Result<Response<BufferCountResponse>, Status>
     {
         self.validate(request.extensions(), READ_BUFFER)?;
         let request = request.into_inner();
         let result = self.resource_db.count_buffer_group(
-            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
-            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferCountResponse { count }))
+    }
+
+    async fn count_buffer_group_by_latest(&self, request: Request<BufferGroupLatest>)
+        -> Result<Response<BufferCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_buffer_group_by_latest(
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            Utc.timestamp_nanos(request.latest * 1000),
+            request.tag.map(|t| t as i16)
+        ).await;
+        let count = match result {
+            Ok(value) => value as u32,
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(BufferCountResponse { count }))
+    }
+
+    async fn count_buffer_group_by_range(&self, request: Request<BufferGroupRange>)
+        -> Result<Response<BufferCountResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_BUFFER)?;
+        let request = request.into_inner();
+        let result = self.resource_db.count_buffer_group_by_range(
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000),
             request.tag.map(|t| t as i16)
         ).await;
         let count = match result {
