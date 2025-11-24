@@ -5,6 +5,7 @@ use rmcs_resource_db::Resource;
 use rmcs_resource_api::slice::slice_service_server::SliceService;
 use rmcs_resource_api::slice::{
     SliceSchema, SliceId, SliceIds, SliceTime, SliceRange, SliceNameTime, SliceNameRange, SliceUpdate, SliceOption,
+    SliceGroupTime, SliceGroupRange, SliceGroupOption,
     SliceSetSchema, SliceSetTime, SliceSetRange, SliceSetOption,
     SliceReadResponse, SliceListResponse, SliceCreateResponse, SliceChangeResponse,
     SliceSetReadResponse, SliceSetListResponse
@@ -137,6 +138,60 @@ impl SliceService for SliceServer {
         let result = self.resource_db.list_slice_option(
             request.device_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
             request.model_id.map(|id| Uuid::from_slice(&id).unwrap_or_default()),
+            request.name.as_deref(),
+            request.begin.map(|t| Utc.timestamp_nanos(t * 1000)),
+            request.end.map(|t| Utc.timestamp_nanos(t * 1000))
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(SliceListResponse { results }))
+    }
+
+    async fn list_slice_group_by_time(&self, request: Request<SliceGroupTime>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_group_by_time(
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            Utc.timestamp_nanos(request.timestamp * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(SliceListResponse { results }))
+    }
+
+    async fn list_slice_group_by_range(&self, request: Request<SliceGroupRange>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_group_by_range(
+            &request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            &request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>(),
+            Utc.timestamp_nanos(request.begin * 1000),
+            Utc.timestamp_nanos(request.end * 1000)
+        ).await;
+        let results = match result {
+            Ok(value) => value.into_iter().map(|e| e.into()).collect(),
+            Err(e) => return Err(handle_error(e))
+        };
+        Ok(Response::new(SliceListResponse { results }))
+    }
+
+    async fn list_slice_group_option(&self, request: Request<SliceGroupOption>)
+        -> Result<Response<SliceListResponse>, Status>
+    {
+        self.validate(request.extensions(), READ_SLICE)?;
+        let request = request.into_inner();
+        let result = self.resource_db.list_slice_group_option(
+            Some(&request.device_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
+            Some(&request.model_ids.into_iter().map(|id| Uuid::from_slice(&id).unwrap_or_default()).collect::<Vec<Uuid>>()),
             request.name.as_deref(),
             request.begin.map(|t| Utc.timestamp_nanos(t * 1000)),
             request.end.map(|t| Utc.timestamp_nanos(t * 1000))
